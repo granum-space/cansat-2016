@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=eagle
+Comment=
+Exec=/opt/eagle-7.6.0/bin/eagle
+Icon=/opt/eagle-7.6.0/bin/eagleicon50.png
+Path=/opt/eagle-7.6.0/bin
+Terminal=false
+StartupNotify=false
