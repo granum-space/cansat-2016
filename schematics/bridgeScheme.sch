@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="7.6.0">
+<eagle version="8.0.2">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -3686,18 +3686,18 @@ drill 1.0 mm</description>
 <part name="LEG2" library="solpad" deviceset="LSP10" device=""/>
 <part name="LEG3" library="solpad" deviceset="LSP10" device=""/>
 <part name="5V" library="solpad" deviceset="LSP10" device=""/>
-<part name="1" library="solpad" deviceset="LSP10" device=""/>
-<part name="2" library="solpad" deviceset="LSP10" device=""/>
-<part name="3" library="solpad" deviceset="LSP10" device=""/>
-<part name="4" library="solpad" deviceset="LSP10" device=""/>
+<part name="S1.2" library="solpad" deviceset="LSP10" device=""/>
+<part name="S1.1" library="solpad" deviceset="LSP10" device=""/>
+<part name="S2.2" library="solpad" deviceset="LSP10" device=""/>
+<part name="S2.1" library="solpad" deviceset="LSP10" device=""/>
 <part name="SOIL1" library="solpad" deviceset="LSP10" device=""/>
 <part name="SOIL2" library="solpad" deviceset="LSP10" device=""/>
 <part name="MISO" library="solpad" deviceset="LSP10" device=""/>
 <part name="MOSI" library="solpad" deviceset="LSP10" device=""/>
 <part name="SCK" library="solpad" deviceset="LSP10" device=""/>
-<part name="5" library="solpad" deviceset="LSP10" device=""/>
-<part name="6" library="solpad" deviceset="LSP10" device=""/>
-<part name="7" library="solpad" deviceset="LSP10" device=""/>
+<part name="CS" library="solpad" deviceset="LSP10" device=""/>
+<part name="E1" library="solpad" deviceset="LSP10" device=""/>
+<part name="E2" library="solpad" deviceset="LSP10" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -3714,72 +3714,69 @@ drill 1.0 mm</description>
 <instance part="LEG2" gate="1" x="-111.76" y="2.54" rot="R90"/>
 <instance part="LEG3" gate="1" x="-116.84" y="-2.54" rot="R90"/>
 <instance part="5V" gate="1" x="25.4" y="-2.54" rot="R90"/>
-<instance part="1" gate="1" x="-68.58" y="27.94" rot="R90"/>
-<instance part="2" gate="1" x="-71.12" y="22.86" rot="R90"/>
-<instance part="3" gate="1" x="-68.58" y="-33.02" rot="R90"/>
-<instance part="4" gate="1" x="-71.12" y="-38.1" rot="R90"/>
+<instance part="S1.2" gate="1" x="-68.58" y="27.94" rot="R90"/>
+<instance part="S1.1" gate="1" x="-71.12" y="22.86" rot="R90"/>
+<instance part="S2.2" gate="1" x="-68.58" y="-33.02" rot="R90"/>
+<instance part="S2.1" gate="1" x="-71.12" y="-38.1" rot="R90"/>
 <instance part="SOIL1" gate="1" x="-12.7" y="43.18" rot="R90"/>
 <instance part="SOIL2" gate="1" x="22.86" y="43.18" rot="R270"/>
 <instance part="MISO" gate="1" x="99.06" y="30.48"/>
 <instance part="MOSI" gate="1" x="104.14" y="35.56"/>
 <instance part="SCK" gate="1" x="109.22" y="40.64"/>
-<instance part="5" gate="1" x="114.3" y="45.72"/>
-<instance part="6" gate="1" x="-12.7" y="17.78" rot="R270"/>
-<instance part="7" gate="1" x="-12.7" y="-43.18" rot="R270"/>
+<instance part="CS" gate="1" x="114.3" y="45.72"/>
+<instance part="E1" gate="1" x="-12.7" y="17.78" rot="R270"/>
+<instance part="E2" gate="1" x="-12.7" y="-43.18" rot="R270"/>
 </instances>
 <busses>
 </busses>
 <nets>
-<net name="N$2" class="0">
+<net name="S2.2" class="0">
 <segment>
 <pinref part="U$3" gate="G$1" pin="S2"/>
 <wire x1="-63.5" y1="-33.02" x2="-66.04" y2="-33.02" width="0.1524" layer="91"/>
-<pinref part="3" gate="1" pin="MP"/>
+<pinref part="S2.2" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$3" class="0">
+<net name="S2.1" class="0">
 <segment>
 <pinref part="U$3" gate="G$1" pin="S1"/>
 <wire x1="-63.5" y1="-38.1" x2="-68.58" y2="-38.1" width="0.1524" layer="91"/>
-<pinref part="4" gate="1" pin="MP"/>
+<pinref part="S2.1" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$4" class="0">
+<net name="S1.1" class="0">
 <segment>
 <pinref part="U$2" gate="G$1" pin="S1"/>
 <wire x1="-63.5" y1="22.86" x2="-68.58" y2="22.86" width="0.1524" layer="91"/>
-<pinref part="2" gate="1" pin="MP"/>
+<pinref part="S1.1" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$5" class="0">
+<net name="S1.2" class="0">
 <segment>
 <pinref part="U$2" gate="G$1" pin="S2"/>
 <wire x1="-63.5" y1="27.94" x2="-66.04" y2="27.94" width="0.1524" layer="91"/>
-<pinref part="1" gate="1" pin="MP"/>
+<pinref part="S1.2" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$6" class="0">
+<net name="E1" class="0">
 <segment>
 <pinref part="U$2" gate="G$1" pin="E"/>
 <wire x1="-20.32" y1="17.78" x2="-15.24" y2="17.78" width="0.1524" layer="91"/>
-<pinref part="6" gate="1" pin="MP"/>
+<pinref part="E1" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$7" class="0">
+<net name="E2" class="0">
 <segment>
 <pinref part="U$3" gate="G$1" pin="E"/>
 <wire x1="-20.32" y1="-43.18" x2="-15.24" y2="-43.18" width="0.1524" layer="91"/>
-<pinref part="7" gate="1" pin="MP"/>
+<pinref part="E2" gate="1" pin="MP"/>
 </segment>
 </net>
 <net name="5V" class="0">
 <segment>
-<wire x1="-60.96" y1="-7.62" x2="-83.82" y2="-7.62" width="0.1524" layer="91"/>
 <pinref part="U$3" gate="G$1" pin="VCC"/>
 <wire x1="-63.5" y1="-68.58" x2="-83.82" y2="-68.58" width="0.1524" layer="91"/>
-<wire x1="-83.82" y1="-68.58" x2="-83.82" y2="-7.62" width="0.1524" layer="91"/>
-<wire x1="-83.82" y1="-7.62" x2="-83.82" y2="66.04" width="0.1524" layer="91"/>
-<junction x="-83.82" y="-7.62"/>
+<wire x1="-83.82" y1="-68.58" x2="-83.82" y2="66.04" width="0.1524" layer="91"/>
 <wire x1="-83.82" y1="66.04" x2="-5.08" y2="66.04" width="0.1524" layer="91"/>
 <wire x1="-5.08" y1="66.04" x2="-5.08" y2="55.88" width="0.1524" layer="91"/>
 <pinref part="R1" gate="G$1" pin="2"/>
@@ -3843,7 +3840,7 @@ drill 1.0 mm</description>
 <pinref part="LEG1" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$13" class="0">
+<net name="SOIL-1" class="0">
 <segment>
 <pinref part="U$2" gate="G$1" pin="Z"/>
 <wire x1="-20.32" y1="2.54" x2="-5.08" y2="2.54" width="0.1524" layer="91"/>
@@ -3855,15 +3852,16 @@ drill 1.0 mm</description>
 <pinref part="SOIL1" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$9" class="0">
+<net name="SOIL-2" class="0">
 <segment>
 <pinref part="R2" gate="G$1" pin="1"/>
 <wire x1="12.7" y1="45.72" x2="12.7" y2="43.18" width="0.1524" layer="91"/>
 <wire x1="12.7" y1="43.18" x2="12.7" y2="12.7" width="0.1524" layer="91"/>
 <wire x1="12.7" y1="43.18" x2="20.32" y2="43.18" width="0.1524" layer="91"/>
 <junction x="12.7" y="43.18"/>
-<wire x1="12.7" y1="12.7" x2="43.18" y2="12.7" width="0.1524" layer="91"/>
 <pinref part="SOIL2" gate="1" pin="MP"/>
+<pinref part="U$1" gate="G$1" pin="PW0"/>
+<wire x1="12.7" y1="12.7" x2="43.18" y2="12.7" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -3892,9 +3890,10 @@ drill 1.0 mm</description>
 <wire x1="-78.74" y1="-25.4" x2="-78.74" y2="-43.18" width="0.1524" layer="91"/>
 <pinref part="U$3" gate="G$1" pin="S0"/>
 <wire x1="-78.74" y1="-43.18" x2="-63.5" y2="-43.18" width="0.1524" layer="91"/>
-<wire x1="-78.74" y1="17.78" x2="-78.74" y2="-25.4" width="0.1524" layer="91"/>
+<wire x1="-78.74" y1="17.78" x2="-78.74" y2="-7.62" width="0.1524" layer="91"/>
 <junction x="-78.74" y="17.78"/>
 <junction x="-78.74" y="-25.4"/>
+<wire x1="-78.74" y1="-7.62" x2="-78.74" y2="-25.4" width="0.1524" layer="91"/>
 <wire x1="-15.24" y1="-33.02" x2="-7.62" y2="-33.02" width="0.1524" layer="91"/>
 <wire x1="-7.62" y1="-33.02" x2="-7.62" y2="-58.42" width="0.1524" layer="91"/>
 <pinref part="U$3" gate="G$1" pin="Z"/>
@@ -3915,9 +3914,12 @@ drill 1.0 mm</description>
 <junction x="35.56" y="-63.5"/>
 <wire x1="12.7" y1="7.62" x2="12.7" y2="-63.5" width="0.1524" layer="91"/>
 <junction x="12.7" y="-63.5"/>
+<pinref part="U$2" gate="G$1" pin="VCC"/>
+<wire x1="-63.5" y1="-7.62" x2="-78.74" y2="-7.62" width="0.1524" layer="91"/>
+<junction x="-78.74" y="-7.62"/>
 </segment>
 </net>
-<net name="N$15" class="0">
+<net name="MISO" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="SO"/>
 <wire x1="43.18" y1="-7.62" x2="38.1" y2="-7.62" width="0.1524" layer="91"/>
@@ -3927,15 +3929,15 @@ drill 1.0 mm</description>
 <pinref part="MISO" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$18" class="0">
+<net name="CS" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="CS"/>
 <wire x1="76.2" y1="-12.7" x2="114.3" y2="-12.7" width="0.1524" layer="91"/>
 <wire x1="114.3" y1="-12.7" x2="114.3" y2="43.18" width="0.1524" layer="91"/>
-<pinref part="5" gate="1" pin="MP"/>
+<pinref part="CS" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$19" class="0">
+<net name="SCK" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="SCK"/>
 <wire x1="76.2" y1="-7.62" x2="109.22" y2="-7.62" width="0.1524" layer="91"/>
@@ -3943,7 +3945,7 @@ drill 1.0 mm</description>
 <pinref part="SCK" gate="1" pin="MP"/>
 </segment>
 </net>
-<net name="N$20" class="0">
+<net name="MOSI" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="SI"/>
 <wire x1="76.2" y1="-2.54" x2="104.14" y2="-2.54" width="0.1524" layer="91"/>
