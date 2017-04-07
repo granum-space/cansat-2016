@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include "diag/Trace.h"
 
+#include "adxl375.h"
+
 // ----------------------------------------------------------------------------
 //
 // STM32F1 empty sample (trace via DEBUG).
@@ -36,9 +38,15 @@ main(int argc, char* argv[])
   // at high speed.
 
   // Infinite loop
-  while (1)
-    {
-       // Add your code here.
+
+	adxl375_init();
+	trace_printf("hello world\n");
+
+	int16_t x, y, z;
+	float x_g, y_g, z_g;
+	while (1) {
+		adxl375_GetGXYZ(&x, &y, &z, &x_g, &y_g, &z_g);
+		trace_printf("%d  %d  %d     %f  %f  %f\n", x, y, z, x_g, y_g, z_g);
     }
 }
 
