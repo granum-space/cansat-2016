@@ -11,8 +11,23 @@
 #include <math.h>
 
 #include "adxl375.h"
+#include "ringbuf.h"
 
 #define ADXL_SPI SPI1
+#define ADXL_WATERMARK_VAL 20
+
+rscs_ringbuf_t * adxl_buf;
+bool adxl_dointwork = 1;
+
+void EXTI9_5_IRQHandler() {
+	if(GPIO_ReadOutputDataBit(GPIOA, GPIO_Pin_3) & adxl_dointwork) {
+		int16_t tmp[3];
+		for(int i = 0; i < ADXL_WATERMARK_VAL; i++) {
+			adxl375_read(tmp, tmp + 1, tmp + 2);
+			rscs_ringbuf_push_many(adxl_buf, tmp, sizeof(tmp));
+		}
+	}
+}
 
 /* Команды на чтение и запись */
 #define ADXL375_SPI_READ        (1 << 7)	//бит на чтение
@@ -70,7 +85,7 @@
 
 
 /* ADXL375 Full Resolution Scale Factor */
-#define ADXL375_SCALE_FACTOR    		0.0039
+#define ADXL375size_t bufsize_SCALE_FACTOR    		0.0039
 #define ADXL375_OFFSET_SCALE_FACTOR		15.6
 
 static void hw_init();
@@ -79,8 +94,10 @@ static int readByte(void);
 int adxl375_getRegisterValue(uint8_t registerAddress, uint8_t * read_data);
 int adxl375_setRegisterValue(uint8_t registerAddress, uint8_t registerValue);
 
-adxl375_e_t adxl375_init() {
+adxl375_e_t adxl375_init(size_t bufsize) {
 	hw_init();
+
+	adxl_buf = rscs_ringbuf_init(bufsize);
 
 	uint8_t devid = 0;
 	adxl375_getRegisterValue(0x00, &devid);
@@ -212,7 +229,7 @@ static void hw_init()
 	portInit.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7; //MOSI, SCLK
 	GPIO_Init(GPIOA, &portInit);
 
-	portInit.GPIO_Pin = GPIO_Pin_6;// MISO
+	portInit.GPIO_Pin = GPIO_Pin_6, GPIO_Pin_3;// MISO, INT
 	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &portInit);
 
@@ -220,6 +237,25 @@ static void hw_init()
 	SPI_Cmd(ADXL_SPI, ENABLE);
 	SPI_NSSInternalSoftwareConfig(ADXL_SPI, SPI_NSSInternalSoft_Set); //ВНнутренний CS для модуля
 
+	EXTI_InitTypeDef exti;
+	NVIC_InitTypeDef nvic;
+
+	EXTI_StructInit(&exti);
+
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource3);
+
+	exti.EXTI_Line = EXTI_Line3;
+	exti.EXTI_LineCmd = ENABLE;
+	exti.EXTI_Mode = EXTI_Mode_Interrupt;
+	exti.EXTI_Trigger = EXTI_Trigger_Rising;
+
+	EXTI_Init(&exti);
+
+	nvic.NVIC_IRQChannel = EXTI9_5_IRQn;
+	nvic.NVIC_IRQChannelCmd = ENABLE;
+	nvic.NVIC_IRQChannelPreemptionPriority = 15;
+	nvic.NVIC_IRQChannelSubPriority = 0;
+	NVIC_Init(&nvic);
 }
 
 

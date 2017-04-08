@@ -9,6 +9,9 @@
 #define ADXL375_H_
 
 #include "stdint.h"
+#include "stdbool.h"
+
+extern bool adxl_dointwork;
 
 typedef enum {
 	ADXL375_E_NONE = 0,
@@ -47,7 +50,7 @@ typedef enum
 	ADXL375_RATE_3200HZ	= 0b1111,	//  3200 Герц
 } adxl375_rate_t;
 
-adxl375_e_t adxl375_init();
+adxl375_e_t adxl375_init(size_t bufsize);
 
 void adxl375_set_range(adxl375_range_t range);
 

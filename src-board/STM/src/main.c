@@ -10,6 +10,7 @@
 #include "diag/Trace.h"
 
 #include "adxl375.h"
+#include "spiwork.h"
 
 // ----------------------------------------------------------------------------
 //
@@ -39,7 +40,7 @@ main(int argc, char* argv[])
 
   // Infinite loop
 
-	adxl375_init();
+	/*adxl375_init(10000);
 	trace_printf("hello world\n");
 
 	int16_t x, y, z;
@@ -47,7 +48,15 @@ main(int argc, char* argv[])
 	while (1) {
 		adxl375_GetGXYZ(&x, &y, &z, &x_g, &y_g, &z_g);
 		trace_printf("%d  %d  %d     %f  %f  %f\n", x, y, z, x_g, y_g, z_g);
-    }
+    }*/
+
+	spiwork_init();
+	volatile int i = 798690;
+	while(1) {
+		i--;i++;i--;
+		i++;i--;i++;
+		i--;i++;i--;
+	}
 }
 
 #pragma GCC diagnostic pop
