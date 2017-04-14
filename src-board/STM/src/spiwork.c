@@ -4,6 +4,8 @@
  *  Created on: 08 апр. 2017 г.
  *      Author: developer
  */
+#include <stdbool.h>
+
 
 #include <stm32f10x_conf.h>
 
@@ -29,8 +31,12 @@ enum {
 } transmitter_state;
 
 void SPI2_IRQHandler() {
+	volatile bool RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
+	volatile bool TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);
 	/*if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE))*/ receive();
 	/*else if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE))*/ transmit();
+	RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
+	TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);
 }
 
 void  spiwork_init() {
@@ -63,7 +69,7 @@ void  spiwork_init() {
 	GPIO_Init(GPIOB, &portInit);
 
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_TXE, ENABLE);
-	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
+	//SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
 
 	NVIC_InitTypeDef nvic;
 	nvic.NVIC_IRQChannel = SPI2_IRQn;
@@ -74,8 +80,12 @@ void  spiwork_init() {
 
 	NVIC_EnableIRQ(SPI2_IRQn);
 
+	transmit();
+
 	SPI_Cmd(SPI2, ENABLE);
 }
+
+int daata = 0;
 
 static void receive() {
 	uint16_t data;
@@ -114,12 +124,14 @@ static void receive() {
 static void transmit() {
 	switch(transmitter_state) {
 	case TRANSMITTER_IDLE:
-		SPI_I2S_SendData(SPI2, 0xffff);
+		SPI_I2S_SendData(SPI2, daata);
 		break;
 
 	case TRANSMITTING_STATUS:
-		SPI_I2S_SendData(SPI2, 0x3a);
+		SPI_I2S_SendData(SPI2, daata);
+		daata++;
 		transmitter_state = TRANSMITTER_IDLE;
+		if(daata == 256) daata = 0;
 		break;
 
 	case TRANSMITTING_ACC:
