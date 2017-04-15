@@ -1,0 +1,3 @@
+[submodule "src-board/ATmega/librscs"]
+	path = src-board/ATmega/librscs
+	url = http://github.com/cansat-rsce/librscs.git
