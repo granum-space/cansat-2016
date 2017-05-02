@@ -1,0 +1,262 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package com.kirs.telemetry.cstp.client;
+
+import static com.kirs.telemetry.cstp.client.TelemetryViewer.gui;
+import java.awt.Dimension;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.ParallelGroup;
+import javax.swing.GroupLayout.SequentialGroup;
+import javax.swing.JPanel;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PiePlot;
+import org.jfree.data.general.DefaultPieDataset;
+import org.jfree.data.xy.DefaultXYDataset;
+
+/**
+ *
+ * @author Kirs
+ */
+public class GUI extends javax.swing.JFrame {
+
+    /**
+     * Creates new form GUI
+     */
+    ChartPanel panel;
+    javax.swing.GroupLayout layout; 
+    SequentialGroup horizontalGroup, verticalGroup;
+    int chartsWidht, chartsCurrentWidth = 0;
+    ArrayList<ParallelGroup> availableHorizontalGroups;
+    ParallelGroup currentVerticalGroup, currentHorizontalGroup;
+    
+    
+    
+    public GUI(int chartsWidth) {
+        //initComponents();
+        this.chartsWidht = chartsWidth;
+        initComponentsSelf();
+        init_GUI(this);
+    }
+    
+    private void test() {
+        DefaultPieDataset data = new DefaultPieDataset();
+        data.setValue("aaa", 27.1);
+        data.setValue("bbb", 42);
+        data.setValue("ccc", 49.5);
+        PiePlot plot = new PiePlot(data);
+        JFreeChart chart = ChartFactory.createPieChart("DATA", data);
+        addChart(new ChartPanel(chart));
+        
+        DefaultXYDataset dataXY = new DefaultXYDataset();
+        double[][] values = new double[2][];
+        values[0] = new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+        values[1] = new double[15];
+        for(int i = 0; i < 15; i++)
+        {
+            values[1][i] = Math.random();
+        }
+        dataXY.addSeries("DATAXY", values);
+        JFreeChart xychart = ChartFactory.createXYAreaChart("Title", "x", "y", dataXY);
+        try {
+        Thread.sleep(1000);
+        addChart(new ChartPanel(xychart));
+        Thread.sleep(1000);
+        addChart(new ChartPanel(xychart));
+        Thread.sleep(1000);
+        addChart(new ChartPanel(xychart));
+        Thread.sleep(1000);
+        addChart(new ChartPanel(xychart));
+        } catch (InterruptedException ex) {
+            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void addChart(JPanel panel) {
+        GroupLayout chartLayout = new GroupLayout(panel);
+        panel.setLayout(chartLayout);
+        chartLayout.setHorizontalGroup(
+            chartLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+            .addGap(0, 140, Short.MAX_VALUE)
+        );
+        chartLayout.setVerticalGroup(
+            chartLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+            .addGap(0, 140, Short.MAX_VALUE)
+        );
+        
+        availableHorizontalGroups.get(chartsCurrentWidth).addComponent(panel);
+        
+        currentVerticalGroup.addComponent(panel);
+        chartsCurrentWidth++;
+        if(chartsCurrentWidth == chartsWidht) 
+        {
+            currentVerticalGroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+            verticalGroup.addGroup(currentVerticalGroup);
+            currentHorizontalGroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+            horizontalGroup.addGroup(currentHorizontalGroup);
+            chartsCurrentWidth = 0;
+        }
+        gui.update(gui.getGraphics());
+    }
+    
+    private void initComponentsSelf() {
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        
+        layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        
+        horizontalGroup = layout.createSequentialGroup();
+        verticalGroup = layout.createSequentialGroup();
+        layout.setHorizontalGroup(horizontalGroup);
+        layout.setVerticalGroup(verticalGroup);
+        
+        currentVerticalGroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+        verticalGroup.addGroup(currentVerticalGroup);
+        
+        availableHorizontalGroups = new ArrayList<>();
+        for(int i = 0; i < chartsWidht; i++) 
+        {
+            availableHorizontalGroups.add( layout.createParallelGroup(GroupLayout.Alignment.LEADING) );
+            horizontalGroup.addGroup(availableHorizontalGroups.get(i));
+        }
+    }
+    
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel1 = new javax.swing.JPanel();
+        jPanel2 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jPanel4 = new javax.swing.JPanel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(131, 131, 131)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(253, Short.MAX_VALUE))))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(227, Short.MAX_VALUE))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    public static void init_GUI(GUI gui) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(GUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+        
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                gui.setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    // End of variables declaration//GEN-END:variables
+}
