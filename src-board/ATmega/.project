@@ -28,7 +28,7 @@
 		<link>
 			<name>common</name>
 			<type>2</type>
-			<locationURI>copy_PARENT/common</locationURI>
+			<location>/home/developer/cansat-2016/src-board/common</location>
 		</link>
 	</linkedResources>
 	<variableList>
