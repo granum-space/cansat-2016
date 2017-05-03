@@ -65,12 +65,13 @@ inline static void sign_packet(gr_telemetry_t * packet);
 rscs_e error = RSCS_E_NONE;
 
 int main() {
+	_delay_ms(2000);
 	packet.soilresist_data[0].adc = 0;
-	packet.soilresist_data[0].digipot = 60529;
+	packet.soilresist_data[0].digipot = 0;
 	packet.soilresist_data[1].adc = 0;
-	packet.soilresist_data[1].digipot = 64535;
+	packet.soilresist_data[1].digipot = 0;
 	packet.soilresist_data[2].adc = 0;
-	packet.soilresist_data[2].digipot = 65535;
+	packet.soilresist_data[2].digipot = 0;
 
 	init();
 
@@ -167,13 +168,10 @@ static void sensupdate() {
 
 inline static void sign_packet(gr_telemetry_t * packet) {
 	packet->number++;
-	packet->time = 0;
+	packet->time = rscs_time_get();
 	packet->checksumm = 0;
 
 	for(int i = 0; i < ( sizeof(gr_telemetry_t) - sizeof(packet->checksumm) ); i++) {
 		packet->checksumm += ((uint8_t *) packet)[i];
 	}
-
-	packet->time = rscs_time_get();
-	packet->checksumm += packet->time;
 }
