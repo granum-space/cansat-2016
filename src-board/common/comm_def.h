@@ -7,7 +7,7 @@ typedef struct {
 
 	uint16_t number;
 
-	int32_t pressure;
+	uint32_t pressure;
 	int32_t temperature_bmp;
 
 	int16_t temperature_ds18;

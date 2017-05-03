@@ -23,6 +23,8 @@
 #include "rscs/uart.h"
 #include "rscs/stdext/stdio.h"
 
+#include "bosh_bmp280.h"
+
 //Дескрипторы устройств
 
 rscs_ads1115_t * ads1115;
@@ -110,16 +112,7 @@ static void init() {
 	}
 
 	{ //BMP280
-		bmp280 = rscs_bmp280_initi2c(RSCS_BMP280_I2C_ADDR_HIGH);
-		rscs_bmp280_parameters_t params = {
-				.pressure_oversampling = RSCS_BMP280_OVERSAMPLING_X16,
-				.temperature_oversampling = RSCS_BMP280_OVERSAMPLING_X2,
-				.standbytyme = RSCS_BMP280_STANDBYTIME_62DOT5MS,
-				.filter = RSCS_BMP280_FILTER_X16
-		};
-		OPR( rscs_bmp280_setup(bmp280, &params) )
-		OPR( rscs_bmp280_changemode(bmp280, RSCS_BMP280_MODE_NORMAL) )
-		calvals = rscs_bmp280_get_calibration_values(bmp280);
+		bosh_bmp280_init();
 	}
 
 	{ //DS18B20
@@ -140,10 +133,7 @@ static void sensupdate() {
 		_delay_ms(100);
 	}
 
-	printf("BMP: status: 0x%02X\n", rscs_bmp280_read_status(bmp280));
-	printf("BMP: status: %d\n", rscs_bmp280_read(bmp280, &rawpress, &rawtemp));
-	rscs_bmp280_calculate(rscs_bmp280_get_calibration_values(bmp280), rawpress, rawtemp, &(packet.pressure), &(packet.temperature_bmp));
-
+	bosh_bmp280_read(&packet.pressure, &packet.temperature_bmp);
 	printf("BMP: p %ld  t %ld   %ld %ld\n", rawpress, rawtemp, packet.pressure, packet.temperature_bmp);
 
 
