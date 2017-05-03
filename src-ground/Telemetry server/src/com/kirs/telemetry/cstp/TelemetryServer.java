@@ -26,7 +26,7 @@ public class TelemetryServer {
     static Thread serverThread;
     static SerialReceiver receiver;
     static int baudrate = 9600, networkPort = 37577;
-    static String serialPort = null;
+    static String serialPort = "COM3";
     
     public static void main(String[] args) {
         parseArgs(args);

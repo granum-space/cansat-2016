@@ -75,7 +75,22 @@ public class GranumParser extends Parser{
     
     private JSONObject decodePacket() {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        long controlSumm = 0;
         buffer.order(ByteOrder.LITTLE_ENDIAN);
+        
+        for(int i = 0; i < (packetLength - 4); i++){
+            controlSumm += (bytes[i] & 0xFF);
+        }
+        controlSumm &= 0xFFFFFFFF;
+        buffer.position(packetLength - 4);
+        if(controlSumm != getUInt(buffer)) {
+            System.out.println(controlSumm);
+            buffer.position(packetLength - 4);
+            System.out.println(getUInt(buffer));
+            return null;
+        }
+        buffer.position(0);
+        
         JSONObject json = new JSONObject();
         
         buffer.getShort();

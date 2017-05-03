@@ -20,8 +20,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.Plot;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.xy.DefaultXYDataset;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -70,18 +75,43 @@ public class GranumParser implements JSONParser{
     ArrayList<DefaultWaypoint> waypoints = new ArrayList<>();
     
     
+    public void addPlot(JFreeChart chart, int seriesCount) {
+        for(int i = 0; i < seriesCount; i++) {
+            setSeriesWidth(chart, i);
+        }
+        gui.addChart( new ChartPanel(chart) );
+    }
     
+    public void setSeriesWidth(JFreeChart chart, int seriesIndex) {
+        if (chart != null) {
+            BasicStroke stroke = new BasicStroke(2.0f);
+            
+            Plot plot = chart.getPlot();
+            if (plot instanceof XYPlot) {
+                XYPlot xyPlot = chart.getXYPlot();
+                XYItemRenderer xyir = xyPlot.getRenderer();
+                xyPlot.setBackgroundPaint(new Color(255, 255, 255));
+                try {
+                    xyir.setSeriesStroke(seriesIndex, stroke); //series line style
+                } catch (Exception e) {
+                    System.err.println("Error setting width for series '"+seriesIndex+"' of chart '"+chart+"': "+e);
+                }
+            } else {
+                System.out.println("setSeriesWidth() unsupported plot: "+plot);
+            }
+        }
+    }
     
     public GranumParser(GUI gui) {
         this.gui = gui;
         
-        gui.addChart( new ChartPanel(ChartFactory.createXYLineChart("Pressure", "time", "pressure", pressure_dataset)) );
-        gui.addChart( new ChartPanel(ChartFactory.createXYLineChart("Temperature", "time", "temperature", temp_dataset)) );
-        gui.addChart( new ChartPanel(ChartFactory.createXYLineChart("Humidity", "time", "humidity", humidity_dataset)) );
-        gui.addChart( new ChartPanel(ChartFactory.createXYLineChart("Luminosity", "time", "luuminosity", luminosity_dataset)) );
-        gui.addChart( new ChartPanel(ChartFactory.createXYLineChart("Accelerations", "time", "accelerations", accelerations_dataset)) );
-        gui.addChart( new ChartPanel(ChartFactory.createXYLineChart("Soil temperature", "time", "temperature", temp_soil_dataset)) );
-        gui.addChart( new ChartPanel(ChartFactory.createXYLineChart("Soil resistance", "time", "resistance", soilresist_dataset)) );
+        addPlot(ChartFactory.createXYLineChart("Pressure", "time", "pressure", pressure_dataset), 1);
+        addPlot(ChartFactory.createXYLineChart("Temperature", "time", "temperature", temp_dataset), 3);
+        addPlot(ChartFactory.createXYLineChart("Humidity", "time", "humidity", humidity_dataset), 1);
+        addPlot(ChartFactory.createXYLineChart("Luminosity", "time", "luuminosity", luminosity_dataset), 3);
+        addPlot(ChartFactory.createXYLineChart("Accelerations", "time", "accelerations", accelerations_dataset), 3);
+        addPlot(ChartFactory.createXYLineChart("Soil temperature", "time", "temperature", temp_soil_dataset), 3);
+        addPlot(ChartFactory.createXYLineChart("Soil resistance", "time", "resistance", soilresist_dataset), 3);
 
         /*map.setZoom(5);
         map.repaint();
@@ -140,7 +170,7 @@ public class GranumParser implements JSONParser{
         latitude_list.add(json.getDouble("LATITUDE"));
         longtitude_list.add(json.getDouble("LONGTITUDE"));
         height_list.add(json.getDouble("HEIGHT"));
-        time_list.add(json.getDouble("TIME"));
+        time_list.add(json.getDouble("TIME") / 1000.0f);
         
         
         pressure_array[0] = doubleListToArray(time_list);

@@ -1,0 +1,1 @@
+java -jar "Telemetry viewer/dist/Telemetry_viewer.jar"

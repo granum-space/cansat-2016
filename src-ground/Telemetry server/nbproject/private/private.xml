@@ -3,10 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/kiril/Documents/NetBeansProjects/Telemetry%20server/src/com/kirs/telemetry/cstp/TelemetryServer.java</file>
-            <file>file:/C:/Users/kiril/Documents/NetBeansProjects/Telemetry%20server/src/com/kirs/telemetry/cstp/Server.java</file>
-            <file>file:/C:/Users/kiril/Documents/NetBeansProjects/Telemetry%20server/src/com/kirs/telemetry/cstp/GranumParser.java</file>
-            <file>file:/C:/Users/kiril/Documents/NetBeansProjects/Telemetry%20server/src/com/kirs/telemetry/cstp/SerialReceiver.java</file>
+            <file>file:/C:/git/granum-space/cansat-2016/src-ground/Telemetry%20server/src/com/kirs/telemetry/cstp/TelemetryServer.java</file>
+            <file>file:/C:/git/granum-space/cansat-2016/src-ground/Telemetry%20server/src/com/kirs/telemetry/cstp/GranumParser.java</file>
+            <file>file:/C:/git/granum-space/cansat-2016/src-ground/Telemetry%20server/src/com/kirs/telemetry/cstp/SerialReceiver.java</file>
+            <file>file:/C:/git/granum-space/cansat-2016/src-ground/Telemetry%20server/src/com/kirs/telemetry/cstp/Server.java</file>
         </group>
     </open-files>
 </project-private>
