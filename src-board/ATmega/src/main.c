@@ -76,7 +76,6 @@ int main() {
 	packet.soilresist_data[2].digipot = 0;
 
 	init();
-
 	while(1) {
 		sensupdate();
 	}
@@ -136,6 +135,7 @@ static void sensupdate() {
 	bosh_bmp280_read(&packet.pressure, &packet.temperature_bmp);
 	printf("BMP: p %ld  t %ld   %ld %ld\n", rawpress, rawtemp, packet.pressure, packet.temperature_bmp);
 
+	//printf("test\n");
 
 	if(dht_untilrequest == 0) {
 		rscs_dht22_read(dht22, &(packet.humidity), &(packet.temperature_dht));
