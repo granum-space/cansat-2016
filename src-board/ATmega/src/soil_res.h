@@ -10,32 +10,34 @@
 
 #include "granum_config.h"
 #include "rscs/spi.h"
+#include "rscs/ads1115.h"
 
 // шаг потенциометра
 #define DP_STEP 392
+/* перед каждой записью сопротивления необходимо передавать
+	 * так называемый "command byte"
+	 * 0 и 1 биты ставятся в 0 и 1 соответственно, если мы используем терминалы
+	   PA, PB и PW с индексом 0
+	 * 4 и 5 биты ставятся в 0 и 1, если мы хотим, чтобы дигипот прочитал байт,
+       идущий после command byte */
+#define COMMAND_BYTE_DP0 0b00010001
+#define COMMAND_BYTE_DP1 0b00010010
+#define RES1 94000
+#define RES2 98000
 
-/* Настройки SPI под дигипот:
-    rscs_spi_init();
-	rscs_spi_set_clk(1000);
-	rscs_spi_set_order(RSCS_SPI_ORDER_MSB_FIRST);
-	rscs_spi_set_pol(RSCS_SPI_POL_SAMPLE_RISE_SETUP_FALL);
-*/
+// Инициализация
+void rscs_soil_res_init(void);
 
-/* По сути важны только 2 нижние функции:
-   Вот эта:
- * Инициализация */
-void rscs_digipot_init(void);
+// Запись сопротивления от 0 до 100кОм в нулевой реостат
+void rscs_digipot_set_res0(uint32_t resistance);
 
-/* И эта:
- * Запись сопротивления в дигипот
- * Просто передай функции необходимое сопротивление в диапазоне от 0 до 100кОм */
-void rscs_digipot_write_res(uint32_t resistance);
+// Запись сопротивления от 0 до 100кОм в первый реостат
+void rscs_digipot_set_res1(uint32_t resistance);
 
-// Возвращает data_byte, который нужно передать следующей функции
-uint8_t digipot_get_data_byte(uint32_t resistance);
+// Запись сопротивления от 0 до 200кОм
+void rscs_digipot_set_res(uint32_t resistance);
 
-/* Возвращает итоговое сопротивление, выдаваемое дигипотом
-*  data_byte можно взять из предыдущей функции */
-uint32_t rscs_digipot_get_res(uint8_t data_byte);
+// Функция снимает показания сопротивления грунта с трех пар стержней
+rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13);
 
 #endif /* DIGIPOT_H_ */

@@ -12,8 +12,6 @@
 #include "comm_def.h"
 
 #include "librscs_config.h"
-#include "rscs/ads1115.h"
-#include "rscs/adc.h"
 #include "rscs/adxl345.h"
 #include "rscs/bmp280.h"
 #include "rscs/dht22.h"
@@ -25,7 +23,6 @@
 
 //Дескрипторы устройств
 
-rscs_ads1115_t * ads1115;
 rscs_adxl345_t * adxl345;
 rscs_bmp280_descriptor_t * bmp280;
 rscs_dht22_t * dht22;
@@ -64,7 +61,7 @@ inline static void sign_packet(gr_telemetry_t * packet);
 #define OPR(OP) error = OP; if(error != RSCS_E_NONE) printf("ERROR %d", error);
 rscs_e error = RSCS_E_NONE;
 
-int main() {
+/*int main() {
 	_delay_ms(2000);
 	packet.soilresist_data[0].adc = 0;
 	packet.soilresist_data[0].digipot = 0;
@@ -80,7 +77,7 @@ int main() {
 	}
 
 	return 0;
-}
+}*/
 
 static void init() {
 
@@ -133,7 +130,43 @@ static void init() {
 
 }
 
-static void sensupdate() {
+#include "soil_res.h"
+#include "granum_config.h"
+#include "rscs/i2c.h"
+#include "rscs/ads1115.h"
+uint32_t res12, res23, res13;
+
+int main ()
+{
+	uart_data = rscs_uart_init(RSCS_UART_ID_UART0, 	RSCS_UART_FLAG_ENABLE_RX
+														|RSCS_UART_FLAG_BUFFER_RX
+														|RSCS_UART_FLAG_ENABLE_TX
+														|RSCS_UART_FLAG_BUFFER_TX);
+	rscs_uart_set_baudrate(uart_data, 9600);
+	rscs_uart_set_character_size(uart_data, 8);
+	rscs_uart_set_parity(uart_data, RSCS_UART_PARITY_NONE);
+	rscs_uart_set_stop_bits(uart_data, RSCS_UART_STOP_BITS_ONE);
+
+	//RSCS_DEBUG_INIT(uart_data)
+	stdin = stdout = rscs_make_uart_stream(uart_data);
+	printf("hellooo!\n");
+
+	rscs_i2c_init();
+	rscs_spi_init();
+	rscs_soil_res_init();
+
+	printf("hellooo!\n");
+	while(1)
+	{
+		rscs_get_soil_res(&res12, &res23, &res13);
+		printf("res12: %lu\n", res12);
+		printf("res23: %lu\n", res23);
+		printf("res13: %lu\n", res13);
+		_delay_ms(1000);
+	}
+	return 0;
+}
+/*static void sensupdate() {
 
 	for(int i = 0; i < 10; i++) {
 		RSCS_DEBUG("ADXL345: reading: %d\n", rscs_adxl345_read(adxl345, &(packet.accelerations[i].x), &(packet.accelerations[i].y), &(packet.accelerations[i].z)));
@@ -174,4 +207,4 @@ inline static void sign_packet(gr_telemetry_t * packet) {
 	for(int i = 0; i < ( sizeof(gr_telemetry_t) - sizeof(packet->checksumm) ); i++) {
 		packet->checksumm += ((uint8_t *) packet)[i];
 	}
-}
+} */
