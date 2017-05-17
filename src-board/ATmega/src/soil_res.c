@@ -111,7 +111,7 @@ void rscs_digipot_set_res(uint32_t resistance)
 rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
 {
 	int16_t value;
-	float min_value;
+	float min_value;	set_bus_low(&MPX1_A_PORTREG, MPX1_A_PIN);
 	uint32_t res3;
 
 	// включить мультиплексорs!
@@ -148,11 +148,13 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
 			// 3 стержень
 			set_bus_low(&MPX2_A_PORTREG, MPX2_B_PIN); // y2 второго мультиплексора
 			set_bus_high(&MPX2_B_PORTREG, MPX2_B_PIN);
+			//set_bus_high(&MPX2_A_PORTREG, MPX2_A_PIN); // y1 первого мультиплексора
+			//set_bus_low(&MPX2_B_PORTREG, MPX2_B_PIN);
 	    }
 
 		min_value = FLT_MAX;
 		res3 = 0;
-		for (uint32_t i = 0; i < 200000; i += 100)
+		for (uint32_t i = 0; i < 200000; i += 10000)
 		{
 			//printf("HELLOOO\n");
 			rscs_digipot_set_res(i);
