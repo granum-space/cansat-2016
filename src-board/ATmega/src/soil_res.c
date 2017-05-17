@@ -69,7 +69,7 @@ void rscs_soil_res_init()
 
 	// настройка ацп
 	adc = rscs_ads1115_init(RSCS_ADS1115_ADDR_GND);
-	rscs_ads1115_set_range(adc, RSCS_ADS1115_RANGE_2DOT048);
+	rscs_ads1115_set_range(adc, RSCS_ADS1115_RANGE_6DOT144);
 	rscs_ads1115_set_datarate(adc, RSCS_ADS1115_DATARATE_860SPS);
 
 	//Настройки SPI под дигипот:
@@ -80,22 +80,32 @@ void rscs_soil_res_init()
 
 void rscs_digipot_set_res(uint32_t resistance)
 {
-	digipot_start();
 	// если сопротивление < 100кОм, то обойдемся одним встроенным реостатом
 	if (resistance < 100000) {
+		digipot_start();
 		rscs_spi_do(COMMAND_BYTE_DP0);
 		/* отправляем data_byte (здесь 0 соответствует нулевому сопротивлению,
 			   а 255 - максимальному сопротивлению, то есть 100кОм, отсюда и DP_STEP = 392) */
 		rscs_spi_do(resistance / DP_STEP);
+		digipot_stop();
+
+		digipot_start();
+		rscs_spi_do(COMMAND_BYTE_DP1);
+		rscs_spi_do(0);
+		digipot_stop();
 	}
 	// если нет, то поставим первый реостат на максимум, а второй на полученную разницу
 	else {
+		digipot_start();
 		rscs_spi_do(COMMAND_BYTE_DP0);
 		rscs_spi_do(255);
+		digipot_stop();
+
+		digipot_start();
 		rscs_spi_do(COMMAND_BYTE_DP1);
 		rscs_spi_do((resistance - 100000) / DP_STEP);
+		digipot_stop();
 	}
-	digipot_stop();
 }
 
 rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
@@ -104,7 +114,7 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
 	float min_value;
 	uint32_t res3;
 
-	// включить мультиплексор!
+	// включить мультиплексорs!
 	set_bus_low(&MPX1_E_PORTREG, MPX1_E_PIN);
 	set_bus_low(&MPX2_E_PORTREG, MPX2_E_PIN);
 
@@ -142,12 +152,13 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
 
 		min_value = FLT_MAX;
 		res3 = 0;
-		for (uint32_t i = 0; i < 200000; i += 1000)
+		for (uint32_t i = 0; i < 200000; i += 100)
 		{
 			//printf("HELLOOO\n");
 			rscs_digipot_set_res(i);
 
 			rscs_e error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &value);
+			printf("value = %d, digi = %lu\n", value, i);
 			if (error != RSCS_E_NONE)
 				return error;
 
