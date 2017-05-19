@@ -34,4 +34,7 @@ void rscs_ringbuf_pop_many(rscs_ringbuf_t * buf, void * data, size_t datasize);
 //Узнать размер записанных данных
 size_t rscs_ringbuf_getsize(rscs_ringbuf_t * buf);
 
+int16_t rscs_ringbuf_see_from_head(rscs_ringbuf_t * buf, size_t shift);
+int16_t rscs_ringbuf_see_from_tail(rscs_ringbuf_t * buf, size_t shift);
+
 #endif /* RINGBUF_H_ */

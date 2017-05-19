@@ -96,3 +96,21 @@ size_t rscs_ringbuf_getfullsize(rscs_ringbuf_t * buf) {
 const uint8_t * rscs_ringbuf_getarray(rscs_ringbuf_t * buf) {
 	return buf->buffer;
 }
+
+int16_t rscs_ringbuf_see_from_head(rscs_ringbuf_t * buf, size_t shift) {
+	if(shift >= buf->size) return -1;
+
+	int i = buf->head - shift - 1;
+	if(i < 0) i += buf->fullsize;
+
+	return buf->buffer[i];
+}
+
+int16_t rscs_ringbuf_see_from_tail(rscs_ringbuf_t * buf, size_t shift) {
+	if(shift >= buf->size) return -1;
+
+	size_t i = buf->tail + shift;
+	if(i >= buf->fullsize) i -= buf->fullsize;
+
+	return buf->buffer[i];
+}

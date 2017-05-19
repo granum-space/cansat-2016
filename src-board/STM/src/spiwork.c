@@ -6,6 +6,8 @@
  */
 #include <stdbool.h>
 
+#include "ringbuf.h"
+#include "adxl375.h"
 
 #include <stm32f10x_conf.h>
 
@@ -15,12 +17,16 @@
 #define AMRQ_ACC_DATA	0xDD
 #define AMRQ_ACC_STOP 	0xEE
 
-static void receive();
-static void transmit();
+static uint32_t _acc_low, _acc_high, _acc_now;
+static uint8_t _acc_params_shift;
+
+static void _receive();
+static void _transmit();
 
 enum { //FIXME нужен статик
 	RECEIVER_IDLE,
-	RECEIVEING_STATUS
+	RECEIVEING_STATUS,
+	RECEIVEING_ACC_PARAMS
 } receiver_state;
 
 enum {
@@ -30,11 +36,11 @@ enum {
 	TRANSMITTING_ACC,
 } transmitter_state;
 
-void SPI2_IRQHandler() {
+void SPI2_IRQHandler(rscs_ringbuf_t * buf) {
 	volatile bool RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
 	volatile bool TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);
-	/*if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE))*/ receive();
-	/*else if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE))*/ transmit();
+	/*if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE))*/ _receive();
+	/*else if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE))*/ _transmit();
 	RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
 	TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);
 }
@@ -80,18 +86,18 @@ void  spiwork_init() {
 
 	NVIC_EnableIRQ(SPI2_IRQn);
 
-	transmit();
+	_transmit();
 
 	SPI_Cmd(SPI2, ENABLE);
 }
 
 int daata = 0;
 
-static void receive() {
+static void _receive() {
 	uint16_t data;
+	data = SPI_I2S_ReceiveData(SPI2);
 	switch(receiver_state) {
 	case RECEIVER_IDLE:
-		data = SPI_I2S_ReceiveData(SPI2);
 		switch(data) {
 		case AMRQ_STATUS_Rx:
 			receiver_state = RECEIVEING_STATUS;
@@ -102,7 +108,10 @@ static void receive() {
 			break;
 
 		case AMRQ_ACC_DATA:
-			transmitter_state = TRANSMITTING_ACC;
+			receiver_state = RECEIVEING_ACC_PARAMS;
+			_acc_high = 0;
+			_acc_params_shift = 0;
+			_acc_params_shift = 0;
 			break;
 
 		case AMRQ_GPS:
@@ -117,25 +126,50 @@ static void receive() {
 		//TODO прием пакета статуса
 		break;
 
+	case RECEIVEING_ACC_PARAMS:
+		if(_acc_params_shift < 32) {
+			_acc_low |= (data << _acc_params_shift);
+		}
+
+		else {
+			if(_acc_params_shift < 64) {
+				_acc_high |= (data << (_acc_params_shift - 32));
+			}
+
+			else {
+				_acc_high *= 6;
+				_acc_low *= 6;
+				_acc_now = _acc_low;
+				receiver_state = RECEIVER_IDLE;
+				transmitter_state = TRANSMITTING_ACC;
+			}
+		}
+		break;
+
 	default: break;
 	}
 }
 
-static void transmit() {
+static void _transmit() {
 	switch(transmitter_state) {
 	case TRANSMITTER_IDLE:
-		SPI_I2S_SendData(SPI2, daata);
+		SPI_I2S_SendData(SPI2, 0xFF);
 		break;
 
 	case TRANSMITTING_STATUS:
-		SPI_I2S_SendData(SPI2, daata);
-		daata++;
-		transmitter_state = TRANSMITTER_IDLE;
-		if(daata == 256) daata = 0;
+		//TODO передача пакета статуса
 		break;
 
 	case TRANSMITTING_ACC:
-		//TODO передача пакета ускорений
+
+		if(_acc_now > _acc_high) {
+			transmitter_state = TRANSMITTER_IDLE;
+		}
+
+		else {
+			SPI_I2S_SendData(SPI2, rscs_ringbuf_see_from_tail(adxl_buf, _acc_high));
+		}
+
 		break;
 
 	case TRANSMITTING_GPS:

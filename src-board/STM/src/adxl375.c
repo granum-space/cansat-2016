@@ -13,8 +13,9 @@
 #include "adxl375.h"
 #include "ringbuf.h"
 
+#include "config.h"
+
 #define ADXL_SPI SPI1
-#define ADXL_WATERMARK_VAL 20
 
 rscs_ringbuf_t * adxl_buf;
 bool adxl_dointwork = 1;

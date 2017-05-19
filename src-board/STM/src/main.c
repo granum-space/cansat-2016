@@ -32,8 +32,7 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-int
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 
 {
   // At this stage the system clock should have already been configured
@@ -41,17 +40,17 @@ main(int argc, char* argv[])
 
   // Infinite loop
 
-	/*adxl375_init(10000);
+	adxl375_init(10000);
 	trace_printf("hello world\n");
 
-	int16_t x, y, z;
+	/*int16_t x, y, z;
 	float x_g, y_g, z_g;
 	while (1) {
 		adxl375_GetGXYZ(&x, &y, &z, &x_g, &y_g, &z_g);
 		trace_printf("%d  %d  %d     %f  %f  %f\n", x, y, z, x_g, y_g, z_g);
     }*/
 
-	spiwork_init();
+	spiwork_init(adxl_buf);
 	volatile int i = 798690;
 	while(1) {
 		i--;i++;i--;
