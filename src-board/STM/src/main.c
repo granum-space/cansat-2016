@@ -12,6 +12,8 @@
 #include "adxl375.h"
 #include "spiwork.h"
 
+#include "comm_def.h"
+
 // ----------------------------------------------------------------------------
 //
 // STM32F1 empty sample (trace via DEBUG).
@@ -31,6 +33,8 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
+
+gr_status_t * gr_status;
 
 int main(int argc, char* argv[])
 

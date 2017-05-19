@@ -26,14 +26,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>src/common</name>
+			<name>common</name>
 			<type>2</type>
-			<locationURI>virtual:/virtual</locationURI>
-		</link>
-		<link>
-			<name>src/common/comm_def.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/common/comm_def.h</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/common</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

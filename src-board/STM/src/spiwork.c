@@ -9,16 +9,28 @@
 #include "ringbuf.h"
 #include "adxl375.h"
 
+#include "../common/comm_def.h"
+
 #include <stm32f10x_conf.h>
 
 #define AMRQ_STATUS_Rx 	0xAA
-#define AMRQ_STATUS_Tx 	0x9B //TODO
-#define AMRQ_GPS 		0xCC
+#define AMRQ_STATUS_Tx 	0xBB
+#define AMRQ_SELFSTATUS	0xCC
 #define AMRQ_ACC_DATA	0xDD
 #define AMRQ_ACC_STOP 	0xEE
 
 static uint32_t _acc_low, _acc_high, _acc_now;
 static uint8_t _acc_params_shift;
+
+static uint8_t _transiever_index = 0;
+
+gr_stm_status selfStatus = {
+		.adxl_status = ADXL_STATUS_IDLE
+};
+
+extern gr_status_t * gr_status;
+static gr_status_t * _new_status;
+
 
 static void _receive();
 static void _transmit();
@@ -32,17 +44,17 @@ enum { //FIXME нужен статик
 enum {
 	TRANSMITTER_IDLE,
 	TRANSMITTING_STATUS,
-	TRANSMITTING_GPS,
+	TRANSMITTING_SELFSTATUS,
 	TRANSMITTING_ACC,
 } transmitter_state;
 
-void SPI2_IRQHandler(rscs_ringbuf_t * buf) {
-	volatile bool RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
-	volatile bool TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);
+void SPI2_IRQHandler() {
+	/*volatile bool RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
+	volatile bool TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);*/
 	/*if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE))*/ _receive();
 	/*else if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE))*/ _transmit();
-	RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
-	TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);
+	/*RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
+	TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);*/
 }
 
 void  spiwork_init() {
@@ -75,7 +87,6 @@ void  spiwork_init() {
 	GPIO_Init(GPIOB, &portInit);
 
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_TXE, ENABLE);
-	//SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
 
 	NVIC_InitTypeDef nvic;
 	nvic.NVIC_IRQChannel = SPI2_IRQn;
@@ -101,6 +112,7 @@ static void _receive() {
 		switch(data) {
 		case AMRQ_STATUS_Rx:
 			receiver_state = RECEIVEING_STATUS;
+			_new_status = malloc(sizeof(gr_status_t));
 			break;
 
 		case AMRQ_STATUS_Tx:
@@ -114,8 +126,9 @@ static void _receive() {
 			_acc_params_shift = 0;
 			break;
 
-		case AMRQ_GPS:
-			transmitter_state = TRANSMITTING_GPS;
+		case AMRQ_SELFSTATUS:
+			transmitter_state = TRANSMITTING_SELFSTATUS;
+			// FIXME заполняем поля
 			break;
 
 		default: break;
@@ -123,7 +136,14 @@ static void _receive() {
 		break;
 
 	case RECEIVEING_STATUS:
-		//TODO прием пакета статуса
+		*( ( (uint8_t *) _new_status) + _transiever_index ) = data & 0xFF;
+		_transiever_index++;
+
+		if(_transiever_index == sizeof(gr_status_t) ) {
+			free(gr_status);
+			gr_status = _new_status;
+			_transiever_index = 0;
+		}
 		break;
 
 	case RECEIVEING_ACC_PARAMS:
@@ -172,8 +192,14 @@ static void _transmit() {
 
 		break;
 
-	case TRANSMITTING_GPS:
-		//TODO передача данных GPS
+	case TRANSMITTING_SELFSTATUS:
+		SPI_I2S_SendData(SPI2, *( ((uint8_t *) &selfStatus ) + _transiever_index));
+		_transiever_index++;
+
+		if(_transiever_index == sizeof(selfStatus)){
+			_transiever_index = 0;
+			transmitter_state = TRANSMITTER_IDLE;
+		}
 		break;
 	}
 }
