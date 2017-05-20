@@ -66,7 +66,7 @@ rscs_e error = RSCS_E_NONE;
 
 rscs_e bmp280_spi_test(void);
 
-int main() {
+/*int main() {
 	init();
 	int16_t ds18_data = 0;
 
@@ -75,13 +75,13 @@ int main() {
 	int32_t rawpress, rawtemp, pres, temp;
 
 	while(1) {
-		/*while(1) if(rscs_ds18b20_check_ready()) break;
+		while(1) if(rscs_ds18b20_check_ready()) break;
 		OPR( rscs_ds18b20_read_temperature(ds18b20, &ds18_data) )
 		OPR( rscs_ds18b20_start_conversion(ds18b20) )
 		RSCS_DEBUG("DS18B20: %f\n", ds18_data / 16.0f);
 
 		OPR( rscs_adxl345_GetGXYZ(adxl345, &x, &y, &z, &x_g, &y_g, &z_g) )
-		RSCS_DEBUG("ADXL345: %f  %f  %f   %d  %d  %d\n", x_g, y_g, z_g, x, y, z);*/
+		RSCS_DEBUG("ADXL345: %f  %f  %f   %d  %d  %d\n", x_g, y_g, z_g, x, y, z);
 
 		RSCS_DEBUG("BMP280: status: %x\n", rscs_bmp280_read_status(bmp280));
 		OPR( rscs_bmp280_read(bmp280, &rawpress, &rawtemp) )
@@ -96,7 +96,7 @@ int main() {
 	}
 
 	return 0;
-}
+}*/
 
 static void init() {
 
@@ -140,8 +140,7 @@ static void init() {
 		OPR( rscs_bmp280_changemode(bmp280, RSCS_BMP280_MODE_NORMAL) )
 		calvals = rscs_bmp280_get_calibration_values(bmp280);
 	}
-
-	/*{ //DS18B20
+{ //DS18B20
 		ds18b20 = rscs_ds18b20_init(0x00); //не используем адресацию
 		OPR( rscs_ds18b20_start_conversion(ds18b20) )
 	}
@@ -175,15 +174,13 @@ int main ()
 
 	rscs_i2c_init();
 	rscs_spi_init();
+	rscs_spi_set_clk(500);
 	rscs_soil_res_init();
 
 	printf("hellooo!\n");
 	while(1)
 	{
-		rscs_get_soil_res(&res12, &res23, &res13);
-		printf("res12: %lu\n", res12);
-		printf("res23: %lu\n", res23);
-		printf("res13: %lu\n", res13);
+		get_res_test();
 		_delay_ms(1000);
 	}
 	return 0;

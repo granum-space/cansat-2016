@@ -28,16 +28,12 @@
 // Инициализация
 void rscs_soil_res_init(void);
 
-// Запись сопротивления от 0 до 100кОм в нулевой реостат
-void rscs_digipot_set_res0(uint32_t resistance);
-
-// Запись сопротивления от 0 до 100кОм в первый реостат
-void rscs_digipot_set_res1(uint32_t resistance);
-
 // Запись сопротивления от 0 до 200кОм
 void rscs_digipot_set_res(uint32_t resistance);
 
 // Функция снимает показания сопротивления грунта с трех пар стержней
 rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13);
+
+rscs_e get_res_test();
 
 #endif /* DIGIPOT_H_ */
