@@ -96,6 +96,15 @@ int adxl375_getRegisterValue(uint8_t registerAddress, uint8_t * read_data);
 int adxl375_setRegisterValue(uint8_t registerAddress, uint8_t registerValue);
 
 adxl375_e_t adxl375_init(size_t bufsize) {
+
+
+	adxl_buf = rscs_ringbuf_init(bufsize);
+	for(size_t i = 0; i < bufsize; i++) {
+		rscs_ringbuf_push(adxl_buf, (uint8_t )i);
+	} // FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
+
+	return ADXL375_E_NONE;
+
 	hw_init();
 
 	adxl_buf = rscs_ringbuf_init(bufsize);

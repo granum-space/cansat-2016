@@ -37,3 +37,26 @@ typedef struct {
 	uint16_t size;
 	accelerations_t * data;
 } gr_accelerationspack_t; //FIXME подумать над названием
+
+typedef struct {
+	enum {
+		ADXL_STATUS_IDLE,
+		ADXL_STATUS_COLLECTING,
+		ADXL_STATUS_FINISHED
+	} adxl_status;
+
+	float lat, lon, alt;
+
+} gr_stm_status;
+
+typedef struct {
+	enum {
+		GR_MODE_STANDBY,
+		GR_MODE_AWAITING,
+		GR_MODE_LIFTING,
+		GR_MODE_LANDING,
+		GR_MODE_ONGROUND
+	} mode;
+
+	bool probes_opened, parachute_opened, seeds_activated;
+} gr_status_t;

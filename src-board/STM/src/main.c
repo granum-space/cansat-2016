@@ -36,6 +36,10 @@
 
 gr_status_t * gr_status;
 
+gr_stm_status selfStatus = {
+		.adxl_status = ADXL_STATUS_IDLE
+};
+
 int main(int argc, char* argv[])
 
 {
@@ -45,7 +49,7 @@ int main(int argc, char* argv[])
   // Infinite loop
 
 	adxl375_init(10000);
-	trace_printf("hello world\n");
+	//trace_printf("hello world\n");
 
 	/*int16_t x, y, z;
 	float x_g, y_g, z_g;
@@ -58,7 +62,7 @@ int main(int argc, char* argv[])
 	volatile int i = 798690;
 	while(1) {
 		i--;i++;i--;
-		i++;i--;i++;
+  		i++;i--;i++;
 		i--;i++;i--;
 	}
 }

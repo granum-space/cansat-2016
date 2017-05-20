@@ -14,21 +14,19 @@
 #include <stm32f10x_conf.h>
 
 #define AMRQ_STATUS_Rx 	0xAA
-#define AMRQ_STATUS_Tx 	0xBB
-#define AMRQ_SELFSTATUS	0xCC
-#define AMRQ_ACC_DATA	0xDD
-#define AMRQ_ACC_STOP 	0xEE
+#define AMRQ_SELFSTATUS	0xBB
+#define AMRQ_ACC_DATA	0xCC
+#define AMRQ_ACC_STOP 	0xDD
 
 static uint32_t _acc_low, _acc_high, _acc_now;
 static uint8_t _acc_params_shift;
 
 static uint8_t _transiever_index = 0;
 
-gr_stm_status selfStatus = {
-		.adxl_status = ADXL_STATUS_IDLE
-};
+extern gr_stm_status selfStatus;
 
-extern gr_status_t * gr_status;
+extern gr_status_t * gr_status;		//TODO передача пакета статуса
+
 static gr_status_t * _new_status;
 
 
@@ -43,7 +41,6 @@ enum { //FIXME нужен статик
 
 enum {
 	TRANSMITTER_IDLE,
-	TRANSMITTING_STATUS,
 	TRANSMITTING_SELFSTATUS,
 	TRANSMITTING_ACC,
 } transmitter_state;
@@ -86,7 +83,7 @@ void  spiwork_init() {
 	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING; //FIXME мб AF_OD
 	GPIO_Init(GPIOB, &portInit);
 
-	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_TXE, ENABLE);
+	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
 
 	NVIC_InitTypeDef nvic;
 	nvic.NVIC_IRQChannel = SPI2_IRQn;
@@ -97,9 +94,10 @@ void  spiwork_init() {
 
 	NVIC_EnableIRQ(SPI2_IRQn);
 
-	_transmit();
-
 	SPI_Cmd(SPI2, ENABLE);
+
+	_receive();
+	_transmit();
 }
 
 int daata = 0;
@@ -115,20 +113,18 @@ static void _receive() {
 			_new_status = malloc(sizeof(gr_status_t));
 			break;
 
-		case AMRQ_STATUS_Tx:
-			transmitter_state = TRANSMITTING_STATUS;
-			break;
-
 		case AMRQ_ACC_DATA:
 			receiver_state = RECEIVEING_ACC_PARAMS;
 			_acc_high = 0;
-			_acc_params_shift = 0;
 			_acc_params_shift = 0;
 			break;
 
 		case AMRQ_SELFSTATUS:
 			transmitter_state = TRANSMITTING_SELFSTATUS;
-			// FIXME заполняем поля
+			selfStatus.adxl_status = gr_status->mode;
+			selfStatus.lat = gr_status->probes_opened;
+			selfStatus.lon = gr_status->parachute_opened;
+			selfStatus.alt = gr_status->seeds_activated;
 			break;
 
 		default: break;
@@ -143,6 +139,7 @@ static void _receive() {
 			free(gr_status);
 			gr_status = _new_status;
 			_transiever_index = 0;
+			receiver_state = RECEIVER_IDLE;
 		}
 		break;
 
@@ -155,14 +152,17 @@ static void _receive() {
 			if(_acc_params_shift < 64) {
 				_acc_high |= (data << (_acc_params_shift - 32));
 			}
+		}
 
-			else {
-				_acc_high *= 6;
-				_acc_low *= 6;
-				_acc_now = _acc_low;
-				receiver_state = RECEIVER_IDLE;
-				transmitter_state = TRANSMITTING_ACC;
-			}
+		_acc_params_shift += 8;
+
+		if (_acc_params_shift == 64){
+			_acc_high *= 6;
+			_acc_low *= 6;
+			_acc_now = _acc_low;
+			_acc_params_shift = 0;
+			receiver_state = RECEIVER_IDLE;
+			transmitter_state = TRANSMITTING_ACC;
 		}
 		break;
 
@@ -173,21 +173,16 @@ static void _receive() {
 static void _transmit() {
 	switch(transmitter_state) {
 	case TRANSMITTER_IDLE:
-		SPI_I2S_SendData(SPI2, 0xFF);
-		break;
-
-	case TRANSMITTING_STATUS:
-		//TODO передача пакета статуса
+		SPI_I2S_SendData(SPI2, 0xBA);
 		break;
 
 	case TRANSMITTING_ACC:
 
-		if(_acc_now > _acc_high) {
-			transmitter_state = TRANSMITTER_IDLE;
-		}
+		SPI_I2S_SendData(SPI2, rscs_ringbuf_see_from_tail(adxl_buf, _acc_now));
+		_acc_now++;
 
-		else {
-			SPI_I2S_SendData(SPI2, rscs_ringbuf_see_from_tail(adxl_buf, _acc_high));
+		if(_acc_now == (_acc_high + 6)) {
+			transmitter_state = TRANSMITTER_IDLE;
 		}
 
 		break;
