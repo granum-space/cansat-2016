@@ -11,6 +11,7 @@
 
 #include "adxl375.h"
 #include "spiwork.h"
+#include "gps_nmea.h"
 
 #include "comm_def.h"
 
@@ -40,6 +41,18 @@ gr_stm_status selfStatus = {
 		.adxl_status = ADXL_STATUS_IDLE
 };
 
+void testuart_init(USART_TypeDef * USARTx) {
+	 USART_InitTypeDef itd;
+	 itd.USART_BaudRate = 9600;
+	 itd.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	 itd.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+	 itd.USART_Parity = USART_Parity_No;
+	 itd.USART_StopBits = USART_StopBits_1;
+	 itd.USART_WordLength = USART_WordLength_8b;
+
+	 USART_Init(USARTx, &itd);
+}
+
 int main(int argc, char* argv[])
 
 {
@@ -49,7 +62,7 @@ int main(int argc, char* argv[])
   // Infinite loop
 
 	adxl375_init(10000);
-	//trace_printf("hello world\n");
+	trace_printf("hello world\n");
 
 	/*int16_t x, y, z;
 	float x_g, y_g, z_g;
@@ -59,11 +72,21 @@ int main(int argc, char* argv[])
     }*/
 
 	spiwork_init(adxl_buf);
+	float lat = 0, lon = 0, alt = 0;
+	bool hasfix;
+	rscs_gps_t * gps = rscs_gps_init(USART2);
 	volatile int i = 798690;
 	while(1) {
-		i--;i++;i--;
+		if(rscs_gps_read(gps, &lon, &lat, &alt, &hasfix) == 0) {
+			trace_printf("%f  %f  %f    %d\n", lat, lon, alt, hasfix);
+		}
+
+		//USART_SendData(USART3, USART_ReceiveData(USART2));
+
+		/*i--;i++;i--;rintf("%c\n", );
   		i++;i--;i++;
-		i--;i++;i--;
+		i--;i++;i--;*/
+
 	}
 }
 
