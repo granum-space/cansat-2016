@@ -117,24 +117,17 @@ void rscs_digipot_set_res(uint32_t resistance)
 	_delay_us(10);
 }
 
-rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
+rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13, uint8_t precision)
 {
 	int16_t value;
-	int16_t min_value_int;
-	float min_value;
-	uint32_t res3;
-
-	//set_bus_low(&MPX1_A_PORTREG, MPX1_A_PIN);
-	rscs_digipot_set_res(100000);
-
 	for (int j = 0; j < 3; j++)
 	{
-		// выключить мультиплексорs!
-		//set_bus_high(&MPX1_E_PORTREG, MPX1_E_PIN);
-		//set_bus_high(&MPX2_E_PORTREG, MPX2_E_PIN);
+		//выключить мультиплексорs!
+		set_bus_low(&MPX1_E_PORTREG, MPX1_E_PIN);
+		set_bus_low(&MPX2_E_PORTREG, MPX2_E_PIN);
 		switch (j)
 		{
-		  case 0:
+		case 0:
 			// подключение в цепь пару стержней с номерами 1 и 2
 			// 1 стержень к пину y0 мультиплексора, для этого подаем следующие сигналы на линии:
 			set_bus_low(&MPX1_A_PORTREG, MPX1_A_PIN);
@@ -143,7 +136,7 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
 			set_bus_high(&MPX2_A_PORTREG, MPX2_A_PIN); // y1 второго мультиплексора
 			set_bus_low(&MPX2_B_PORTREG, MPX2_B_PIN);
 			break;
-		  case 1:
+		case 1:
 			// подключение в цепь пару стержней с номерами 1 и 3
 			// 1 стержень
 			set_bus_low(&MPX1_A_PORTREG, MPX1_A_PIN); // y0 первого мультиплексора
@@ -152,130 +145,53 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13)
 			set_bus_low(&MPX2_A_PORTREG, MPX2_A_PIN); // y2 второго мультиплексора
 			set_bus_high(&MPX2_B_PORTREG, MPX2_B_PIN);
 			break;
-		  case 2:
-		    // подключение в цепь пару стержней с номерами  2 и 3
+		case 2:
+			// подключение в цепь пару стержней с номерами  2 и 3
 			// 2 стержень
 			set_bus_high(&MPX1_A_PORTREG, MPX1_A_PIN); // y1 первого мультиплексора
 			set_bus_low(&MPX1_B_PORTREG, MPX1_B_PIN);
 			// 3 стержень
 			set_bus_low(&MPX2_A_PORTREG, MPX2_A_PIN); // y2 второго мультиплексора
 			set_bus_high(&MPX2_B_PORTREG, MPX2_B_PIN);
-	    };
+		};
 
-		min_value = FLT_MAX;
-		min_value_int = INT16_MAX;
-		res3 = 0;
-		for (uint32_t i = 0; i < 200000; i += 10000)
+		rscs_e error;
+
+		int16_t parrots_dif1, parrots_dif2, parrots_difX;
+		uint32_t res1 = 0, res2 = 200000, resX;
+
+		rscs_digipot_set_res(res1);
+		error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif1);
+		rscs_digipot_set_res(res2);
+		error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif2);
+
+		/* Рассматриваем зависимость разницы потенциалов от значения сопротивления на дигипоте
+		 * как монотонную функцию */
+
+		for (int i = 0; i < precision; i++)
 		{
-			rscs_digipot_set_res(i);
+			/*rscs_digipot_set_res(res1);
+			error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif1);
+			printf("left: %d", parrots_dif1);
+			rscs_digipot_set_res(res2);
+			error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif2);
+			printf(" right: %d\n", parrots_dif2); */
+			resX = (res2 + res1) / 2;
+			rscs_digipot_set_res(resX);
+			error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_difX);
 
-			rscs_e error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &value);
-			//printf("value = %d, digi = %lu\n", value, i);
-			if (error != RSCS_E_NONE)
-				return error;
-
-			if (abs(value) < min_value_int)
+			if (parrots_difX > 0)
 			{
-				min_value_int = abs(value);
-				res3 = i;
+				res2 = resX;
 			}
-			/*
-			float value_in_volts = fabs(rscs_ads1115_convert(adc, value));
-			// записываем в min_value наименьшее значение разницы потенциалов между пинами
-			if (value_in_volts < min_value)
-			{
-				min_value = value_in_volts;
-			    // в min_i запоминаем сопротивление дигипота при минимальном значении разницы потенциалов
-				res3 = i;
-			}
-			*/
-		}
-		//printf("in volts at %d: %f, %lu\n", j, min_value, res3);
-		printf("in volts at %d: %d, %lu\n", j, min_value_int, res3);
-
-	}
-
-	return RSCS_E_NONE;
-}
-
-rscs_e get_res_test()
-{
-	int16_t value;
-	int16_t min_value_int;
-	float min_value;
-	uint32_t res3;
-
-		for (int j = 0; j < 3; j++)
-		{
-			// выключить мультиплексорs!
-			//set_bus_high(&MPX1_E_PORTREG, MPX1_E_PIN);
-			//set_bus_high(&MPX2_E_PORTREG, MPX2_E_PIN);
-			switch (j)
-			{
-			  case 0:
-				// подключение в цепь пару стержней с номерами 1 и 2
-				// 1 стержень к пину y0 мультиплексора, для этого подаем следующие сигналы на линии:
-				set_bus_low(&MPX1_A_PORTREG, MPX1_A_PIN);
-				set_bus_low(&MPX1_B_PORTREG, MPX1_B_PIN);
-				// 2 стержень
-				set_bus_high(&MPX2_A_PORTREG, MPX2_A_PIN); // y1 второго мультиплексора
-				set_bus_low(&MPX2_B_PORTREG, MPX2_B_PIN);
-				break;
-			  case 1:
-				// подключение в цепь пару стержней с номерами 1 и 3
-				// 1 стержень
-				set_bus_low(&MPX1_A_PORTREG, MPX1_A_PIN); // y0 первого мультиплексора
-				set_bus_low(&MPX1_B_PORTREG, MPX1_B_PIN);
-				// 3 стержень
-				set_bus_low(&MPX2_A_PORTREG, MPX2_A_PIN); // y2 второго мультиплексора
-				set_bus_high(&MPX2_B_PORTREG, MPX2_B_PIN);
-				break;
-			  case 2:
-			    // подключение в цепь пару стержней с номерами  2 и 3
-				// 2 стержень
-				set_bus_high(&MPX1_A_PORTREG, MPX1_A_PIN); // y1 первого мультиплексора
-				set_bus_low(&MPX1_B_PORTREG, MPX1_B_PIN);
-				// 3 стержень
-				set_bus_low(&MPX2_A_PORTREG, MPX2_A_PIN); // y2 второго мультиплексора
-				set_bus_high(&MPX2_B_PORTREG, MPX2_B_PIN);
-		    };
-
-			rscs_e error;
-
-			// x1, x2 - значения в милливольтах при разных сопротивлениях дигипота
-			float x1, x2;
-			uint32_t res1 = 0, res2 = 200000;
-			uint32_t res1_prev, res2_prev;
-
-			res3 = res2;
-			for (int i = 0; i < 100; i++)
-			{
-				rscs_digipot_set_res(res1);
-				error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &value);
-				x1 = rscs_ads1115_convert(adc, value);
-
-				rscs_digipot_set_res(res2);
-				error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &value);
-				x2 = rscs_ads1115_convert(adc, value);
-
-				if (x1 < 0 && x2 > 0)
+				else if (parrots_difX < 0)
 				{
-					res2 = (res2 - res1)/2;
-					res2_prev = res2;
-				} else if (x1 < 0 && x2 < 0)
-				  {
-				      res1 = res2;
-				      res2 = res2_prev;
-				  }
+					res1 = resX;
+				}
+					else break;
 			}
-			res3 = res2;
-			printf("in volts at %d: %lu\n", j, res3);
-
+			printf("in volts at %d: %lu\n", j, resX);
 		}
 
 		return RSCS_E_NONE;
-}
-
-
-
-
+	}

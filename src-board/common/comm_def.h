@@ -1,3 +1,4 @@
+#include <stdbool.h>
 typedef struct {
 	int16_t x, y, z;
 } accelerations_t;

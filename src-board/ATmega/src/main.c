@@ -180,7 +180,7 @@ int main ()
 	printf("hellooo!\n");
 	while(1)
 	{
-		get_res_test();
+		rscs_get_soil_res(&res12, &res23, &res13, 15);
 		_delay_ms(1000);
 	}
 	return 0;
