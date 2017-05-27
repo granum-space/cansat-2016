@@ -70,7 +70,7 @@ void rscs_soil_res_init()
 	set_bus_high(&MPX2_E_PORTREG, MPX2_E_PIN);
 
 	// настройка ацп
-	adc = rscs_ads1115_init(RSCS_ADS1115_ADDR_GND);
+	adc = rscs_ads1115_init(GR_ADS1115_ADDR);
 	rscs_ads1115_set_range(adc, RSCS_ADS1115_RANGE_6DOT144);
 	rscs_ads1115_set_datarate(adc, RSCS_ADS1115_DATARATE_475SPS);
 

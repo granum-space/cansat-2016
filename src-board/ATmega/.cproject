@@ -89,7 +89,7 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="librscs|librscs/rscs/_source/servo.c|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry excluding="rscs/_source/servo.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="librscs"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="librscs"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
@@ -184,7 +184,7 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="librscs|librscs/rscs/_source/servo.c|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry excluding="rscs/_source/servo.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="librscs"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="librscs"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
