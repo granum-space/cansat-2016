@@ -4,6 +4,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <stm32f10x.h>
+
+#include "minmea.h"
+
 #include "ringbuf.h"
 
 #include "gps_nmea.h"
@@ -14,13 +18,6 @@ typedef enum
 	GPS_STATE_ACCUMULATE,	// накапливаем символы
 } state_t;
 
-rscs_ringbuf_t * gps_buf;
-
-void USART2_IRQHandler() {
-	//USART_ClearITPendingBit(USART2, USART_IT_RXNE);
-	rscs_ringbuf_push(gps_buf, USART_ReceiveData(USART2));
-}
-
 struct rscs_gps_t
 {
 	USART_TypeDef * uart;
@@ -29,6 +26,12 @@ struct rscs_gps_t
 	size_t buffer_carret;
 };
 
+rscs_ringbuf_t * gps_buf;
+
+void USART2_IRQHandler() {
+	//USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+	rscs_ringbuf_push(gps_buf, USART_ReceiveData(USART2));
+}
 
 rscs_gps_t * rscs_gps_init(USART_TypeDef * uartId)
 {
@@ -81,8 +84,6 @@ rscs_gps_t * rscs_gps_init(USART_TypeDef * uartId)
 
 	USART_ITConfig(retval->uart, USART_IT_RXNE, ENABLE);
 
-	__enable_irq();
-
 	return retval;
 }
 
@@ -112,9 +113,18 @@ static int _explode(const char * str, size_t msgSize, char symbol, const char **
 static bool _handle_message(const char * msg_signed, size_t msgSize, float * lon, float * lat,
 						    float * height, bool * hasFix)
 {
-	trace_printf("HM\n");
-	const uint8_t * msg = (const uint8_t *)msg_signed;
-	char chksum = msg[1]; // пропускаем нулевой символ $
+	printf("HandleMessage\n");
+
+	struct minmea_sentence_gga frame;
+	if( !minmea_parse_gga(&frame, msg_signed)) return false;
+	*lon = minmea_tofloat(&frame.longitude);
+	*lat = minmea_tofloat(&frame.latitude);
+	*height = minmea_tofloat(&frame.altitude);
+	*hasFix = frame.fix_quality != 0;
+
+	return 1;
+
+	/*char chksum = msg[1]; // пропускаем нулевой символ $
 
 	size_t chksumLimit = msgSize - 5; // Пропускаем *XX\r\n
 	for (size_t i = 2; i < chksumLimit; i++)
@@ -156,7 +166,7 @@ static bool _handle_message(const char * msg_signed, size_t msgSize, float * lon
 		*hasFix = false;
 		else
 		*hasFix = true;
-	return true;
+	return true;*/
 }
 
 int rscs_uart_read_some(USART_TypeDef * uart, void * data, size_t count) {

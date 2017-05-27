@@ -23,6 +23,8 @@ static uint8_t _acc_params_shift;
 
 static uint8_t _transiever_index = 0;
 
+float latitude, longtitude, altitude;
+
 extern gr_stm_status selfStatus;
 
 extern gr_status_t * gr_status;		//TODO передача пакета статуса

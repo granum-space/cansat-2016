@@ -36,7 +36,7 @@ typedef struct {
 
 typedef struct {
 	uint16_t size;
-	accelerations_t * data;
+	accelerations_t data[];
 } gr_accelerationspack_t; //FIXME подумать над названием
 
 typedef struct {
@@ -47,14 +47,17 @@ typedef struct {
 	} adxl_status;
 
 	float lat, lon, alt;
+	bool hasFix;
 
 } gr_stm_status;
 
 typedef struct {
 	enum {
-		GR_MODE_STANDBY,
-		GR_MODE_AWAITING,
+		GR_MODE_IDLE,
+		GR_MODE_AWAITING_START,
 		GR_MODE_LIFTING,
+		GR_MODE_AWAITING_PARACHUTE,
+		GR_MODE_AWAITING_LEGS,
 		GR_MODE_LANDING,
 		GR_MODE_ONGROUND
 	} mode;

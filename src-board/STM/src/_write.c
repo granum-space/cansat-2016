@@ -11,6 +11,7 @@
 #include <errno.h>
 #include "diag/Trace.h"
 
+#include <stm32f10x_usart.h>
 // ----------------------------------------------------------------------------
 
 // When using retargetted configurations, the standard write() system call,
@@ -33,16 +34,17 @@ ssize_t
 _write (int fd __attribute__((unused)), const char* buf __attribute__((unused)),
 	size_t nbyte __attribute__((unused)))
 {
-#if defined(TRACE)
-  // STDOUT and STDERR are routed to the trace device
-  if (fd == 1 || fd == 2)
-    {
-      return trace_write (buf, nbyte);
+	if (fd == 1 || fd == 2) {
+		for(size_t i = 0; i < nbyte; i++) {
+			USART_SendData(USART3, buf[i]);
+			while(1){
+				if(USART_GetFlagStatus(USART3, USART_FLAG_TXE)) break;
+			}
+		}
     }
-#endif // TRACE
 
-  errno = ENOSYS;
-  return -1;
+	errno = ENOSYS;
+	return -1;
 }
 
 // ----------------------------------------------------------------------------
