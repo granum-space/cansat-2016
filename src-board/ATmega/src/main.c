@@ -59,6 +59,8 @@ int main() {
 
 		rscs_spi_init();
 
+		// TODO: Василий. Оформить взаимодействие с STM в виде модуля
+		// и отладить. В контексте отсутствия ожидания данных от UART может вылезти много чего интересного
 		while(1) {
 			rscs_uart_write_byte(uart_data, rscs_spi_do( rscs_uart_read_byte( uart_data )));
 

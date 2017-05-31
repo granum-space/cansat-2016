@@ -219,7 +219,9 @@ static void _transmit() {
 		break;
 
 	case TRANSMITTING_SELFSTATUS:
-
+		// FIXME: Василий: не потокобезопасно
+		// следует по получению команды с выключенными прерываниями перекинуть всю структуру статуса в буфер
+		// и отдавать оттуда
 		data = *( ((uint8_t *) &selfStatus ) + _transiever_index);
 		_transiever_index++;
 

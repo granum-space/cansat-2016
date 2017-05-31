@@ -70,7 +70,7 @@ typedef struct {
 	accelerations_t data[];
 } gr_telemetry_adxl375_t;
 
-//Статусные пакеты
+//Статусные пакеты TODO: Василий: Рассмотреть вомзожность упразднения режима LIFTING, присвоить енумам значения
 typedef struct {
 	enum {
 		GR_MODE_IDLE,

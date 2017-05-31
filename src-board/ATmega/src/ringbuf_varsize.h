@@ -40,4 +40,6 @@ void * rscs_ringbuf_varsize_see_from_head(rscs_ringbuf_varsize_t * buf, size_t s
 // С адресацией от хвоста
 void * rscs_ringbuf_varsize_see_from_tail(rscs_ringbuf_varsize_t * buf, size_t shift);
 
+// TODO: Нужны еще потокобезопасные функции чтения с копированием
+
 #endif /* RINGBUF_H_ */
