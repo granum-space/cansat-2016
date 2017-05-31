@@ -99,9 +99,6 @@ adxl375_e_t adxl375_init(size_t bufsize) {
 
 
 	adxl_buf = rscs_ringbuf_init(bufsize);
-	for(size_t i = 0; i < bufsize; i++) {
-		rscs_ringbuf_push(adxl_buf, (uint8_t )i);
-	} // FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
 
 	return ADXL375_E_NONE;
 
@@ -263,7 +260,7 @@ static void hw_init()
 
 	nvic.NVIC_IRQChannel = EXTI9_5_IRQn;
 	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = 15;
+	nvic.NVIC_IRQChannelPreemptionPriority = 15; //FIXME настроить приоритет прерываний
 	nvic.NVIC_IRQChannelSubPriority = 0;
 	NVIC_Init(&nvic);
 }

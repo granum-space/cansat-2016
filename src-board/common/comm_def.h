@@ -1,4 +1,8 @@
+#ifndef COMM_DEF_H_
+#define COMM_DEF_H_
+
 #include <stdbool.h>
+#include "stdint.h"
 
 //Вспомогательный тип для хранения ускорений
 typedef struct {
@@ -38,7 +42,7 @@ typedef struct {
 } gr_telemetry_slow_t;
 
 typedef struct {
-	uint16_t marker; //Must be 0xFCFC
+	uint16_t marker; //Must be 0xFC1A
 
 	uint16_t number;
 	uint32_t tick;
@@ -61,7 +65,7 @@ typedef struct {
 } gr_telemetry_so_slow_t;
 
 typedef struct {
-	uint16_t marker; //Must be 0x//FIXME подумать над названием
+	uint16_t marker; //Must be 0xFA7B
 	uint16_t start_i, end_i;
 	accelerations_t data[];
 } gr_telemetry_adxl375_t;
@@ -81,14 +85,24 @@ typedef struct {
 	bool seeds_activated;
 } gr_status_t;
 
-typedef struct {
-	enum {
-		ADXL_STATUS_IDLE,
-		ADXL_STATUS_COLLECTING,
-		ADXL_STATUS_FINISHED
-	} adxl_status;
+enum {
+	ADXL_STATUS_IDLE,
+	ADXL_STATUS_COLLECTING,
+	ADXL_STATUS_FINISHED
+} stm_adxl_status;
 
-	float lat, lon, alt;
+typedef struct {
+
+	uint8_t adxl_status; //Одно из значений enum stm_adxl_status
 	bool hasFix;
+	float lat, lon, alt;
 
 } gr_status_stm_t;
+
+
+//Запросы от атмеги к стм
+#define AMRQ_STATUS_Rx 		0xAA
+#define AMRQ_SELFSTATUS_Tx	0xBB
+#define AMRQ_ACC_DATA		0xCC
+
+#endif //COMM_DEF_H_

@@ -35,6 +35,41 @@ rscs_e error = RSCS_E_NONE;
 
 int main() {
 
+	{ //Test purposes only
+
+#define STM_SELECT PORTB &= ~(1 << 4);
+#define STM_UNSELECT PORTB |= (1 << 4);
+
+		{ //UART для данных (ID_UART0)
+			uart_data = rscs_uart_init(RSCS_UART_ID_UART0, 	RSCS_UART_FLAG_ENABLE_RX
+															|RSCS_UART_FLAG_BUFFER_RX
+															|RSCS_UART_FLAG_ENABLE_TX
+															|RSCS_UART_FLAG_BUFFER_TX);
+			rscs_uart_set_baudrate(uart_data, 9600);
+			rscs_uart_set_character_size(uart_data, 8);
+			rscs_uart_set_parity(uart_data, RSCS_UART_PARITY_NONE);
+			rscs_uart_set_stop_bits(uart_data, RSCS_UART_STOP_BITS_ONE);
+
+			RSCS_DEBUG_INIT(uart_data)
+			stdin = stdout = rscs_make_uart_stream(uart_data);
+		}
+
+		DDRB |= (1 << 4);
+		STM_UNSELECT
+
+		rscs_spi_init();
+
+		while(1) {
+			rscs_uart_write_byte(uart_data, rscs_spi_do( rscs_uart_read_byte( uart_data )));
+
+			STM_SELECT
+
+			rscs_uart_write_byte(uart_data, rscs_spi_do( rscs_uart_read_byte( uart_data )));
+
+			STM_UNSELECT
+		}
+	}
+
 	while(GR_JMP_INACT_VAL) //Если поставили джампер неактивности, то ничего не делаем
 
 	init();

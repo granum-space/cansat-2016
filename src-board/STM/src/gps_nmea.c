@@ -22,7 +22,7 @@ struct rscs_gps_t
 {
 	USART_TypeDef * uart;
 	state_t state;
-	char buffer[/*FIXME RSCS_GPS_BUFFER_SIZE*/100];
+	char buffer[100];
 	size_t buffer_carret;
 };
 
@@ -95,22 +95,7 @@ void rscs_gps_deinit(rscs_gps_t * gps)
 }
 
 
-static int _explode(const char * str, size_t msgSize, char symbol, const char ** results,
-		size_t results_size)
-{
-	uint8_t numbersOfStr = 0;
-	for (int i = 0; i < msgSize; i++){
-		if (str[i] == symbol){
-			results[numbersOfStr] = &str[i + 1];
-			if (numbersOfStr > results_size)
-				return 0;
-			numbersOfStr++;
-		}
-	}
-	return numbersOfStr;
-}
-
-static bool _handle_message(const char * msg_signed, size_t msgSize, float * lon, float * lat,
+static bool _handle_message(const char * msg_signed, float * lon, float * lat,
 						    float * height, bool * hasFix)
 {
 	printf("HandleMessage\n");
@@ -170,7 +155,8 @@ static bool _handle_message(const char * msg_signed, size_t msgSize, float * lon
 }
 
 int rscs_uart_read_some(USART_TypeDef * uart, void * data, size_t count) {
-	int i = 0;
+	(void) uart;
+	size_t i = 0;
 
 	for(i = 0; (i < count) && ( rscs_ringbuf_getsize(gps_buf) != 0); i++) {
 		rscs_ringbuf_pop(gps_buf, ((uint8_t *)data + i));
@@ -237,7 +223,7 @@ again:
 				&& '\n' == gps->buffer[gps->buffer_carret-1]
 			    && '\r' == gps->buffer[gps->buffer_carret-2])
 			{
-				if (_handle_message(gps->buffer, gps->buffer_carret, lon, lat, height, hasFix))
+				if (_handle_message(gps->buffer, lon, lat, height, hasFix))
 				{
 					gps->state = GPS_STATE_IDLE;
 					return 0;

@@ -10,57 +10,58 @@
 #include "adxl375.h"
 
 #include "../common/comm_def.h"
+#include "globals.h"
 
 #include <stm32f10x_conf.h>
 
-#define AMRQ_STATUS_Rx 	0xAA
-#define AMRQ_SELFSTATUS	0xBB
-#define AMRQ_ACC_DATA	0xCC
-#define AMRQ_ACC_STOP 	0xDD
-
+//Индексы для вычитки ускорений из буфера
 static uint32_t _acc_low, _acc_high, _acc_now;
 static uint8_t _acc_params_shift;
 
+//Индекс для передачи
 static uint8_t _transiever_index = 0;
-
-float latitude, longtitude, altitude;
-
-extern gr_stm_status selfStatus;
-
-extern gr_status_t * gr_status;		//TODO передача пакета статуса
-
-static gr_status_t * _new_status;
-
 
 static void _receive();
 static void _transmit();
 
-enum { //FIXME нужен статик
+static enum {
 	RECEIVER_IDLE,
+	RECEIVER_AMRQ,
 	RECEIVEING_STATUS,
 	RECEIVEING_ACC_PARAMS
 } receiver_state;
 
-enum {
+static enum {
 	TRANSMITTER_IDLE,
 	TRANSMITTING_SELFSTATUS,
 	TRANSMITTING_ACC,
 } transmitter_state;
 
 void SPI2_IRQHandler() {
-	/*volatile bool RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
-	volatile bool TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);*/
-	/*if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE))*/ _receive();
-	/*else if(SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE))*/ _transmit();
-	/*RXNE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_RXNE);
-	TXE = SPI_I2S_GetITStatus(SPI2, SPI_I2S_IT_TXE);*/
+	_receive();
+	_transmit();
+}
+
+void EXTI15_10_IRQHandler() { //CS change handling
+	//Если CS поднялся, то идём в IDLE
+	if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12)) receiver_state = RECEIVER_IDLE;
+	//Иначе ждём запроса от атмеги
+	else receiver_state = RECEIVER_AMRQ;
+	//Сбрасываем флаг прерывания
+	EXTI_ClearITPendingBit(EXTI_Line12);
 }
 
 void  spiwork_init() {
+	//Инициализируем указатели на структуры статуса
+	gr_status_p = &gr_status0;
+	gr_status_p_tmp = &gr_status1;
+
+	//Клокаем всё, что только можно!
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
+	//Настраиваем SPI
 	SPI_InitTypeDef spiconf;
 	spiconf.SPI_CRCPolynomial = 7; // Отключено (так Василий сказал)
 	spiconf.SPI_DataSize = SPI_DataSize_8b;
@@ -69,11 +70,12 @@ void  spiwork_init() {
 	spiconf.SPI_FirstBit = SPI_FirstBit_MSB;
 	spiconf.SPI_Mode = SPI_Mode_Slave;
 	spiconf.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
-	spiconf.SPI_CPHA = SPI_CPHA_1Edge;//FIXME настройки SPI как в атмеге
+	spiconf.SPI_CPHA = SPI_CPHA_1Edge;
 	spiconf.SPI_CPOL = SPI_CPOL_Low;
 
 	SPI_Init(SPI2, &spiconf);
 
+	//GPIO для SPI
 	GPIO_InitTypeDef portInit;
 
 	portInit.GPIO_Speed = GPIO_Speed_50MHz;
@@ -82,37 +84,63 @@ void  spiwork_init() {
 	GPIO_Init(GPIOB, &portInit);
 
 	portInit.GPIO_Pin = GPIO_Pin_15, GPIO_Pin_13, GPIO_Pin_12;// MOSI, SCLK, CS
-	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING; //FIXME мб AF_OD
+	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOB, &portInit);
 
+	//Настройка прерываний SPI
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
 
 	NVIC_InitTypeDef nvic;
 	nvic.NVIC_IRQChannel = SPI2_IRQn;
 	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = 0;
+	nvic.NVIC_IRQChannelPreemptionPriority = 0; //FIXME настроить приоритет прерываний
 	nvic.NVIC_IRQChannelSubPriority = 0;
 	NVIC_Init(&nvic);
 
-	NVIC_EnableIRQ(SPI2_IRQn);
+	//Настройка прерываний EXTI (CS)
+	EXTI_InitTypeDef exti;
 
+	EXTI_StructInit(&exti);
+
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource12);
+
+	exti.EXTI_Line = EXTI_Line12;
+	exti.EXTI_LineCmd = ENABLE;
+	exti.EXTI_Mode = EXTI_Mode_Interrupt;
+	exti.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+
+	EXTI_Init(&exti);
+
+	nvic.NVIC_IRQChannel = EXTI15_10_IRQn;
+	nvic.NVIC_IRQChannelCmd = ENABLE;
+	nvic.NVIC_IRQChannelPreemptionPriority = 14; //FIXME настроить приоритет прерываний
+	nvic.NVIC_IRQChannelSubPriority = 0;
+	NVIC_Init(&nvic);
+
+
+	NVIC_EnableIRQ(SPI2_IRQn);
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+
+	//Активируем модуль SPI
 	SPI_Cmd(SPI2, ENABLE);
 
+	//Прокачиваем первый обмен
 	_receive();
 	_transmit();
 }
 
-int daata = 0;
 
 static void _receive() {
-	uint16_t data;
-	data = SPI_I2S_ReceiveData(SPI2);
+	uint16_t data = SPI_I2S_ReceiveData(SPI2);
 	switch(receiver_state) {
-	case RECEIVER_IDLE:
+
+	case RECEIVER_AMRQ:
+
 		switch(data) {
+
 		case AMRQ_STATUS_Rx:
 			receiver_state = RECEIVEING_STATUS;
-			_new_status = malloc(sizeof(gr_status_t));
 			break;
 
 		case AMRQ_ACC_DATA:
@@ -121,25 +149,27 @@ static void _receive() {
 			_acc_params_shift = 0;
 			break;
 
-		case AMRQ_SELFSTATUS:
+		case AMRQ_SELFSTATUS_Tx:
 			transmitter_state = TRANSMITTING_SELFSTATUS;
-			selfStatus.adxl_status = gr_status->mode;
-			selfStatus.lat = gr_status->probes_opened;
-			selfStatus.lon = gr_status->parachute_opened;
-			selfStatus.alt = gr_status->seeds_activated;
 			break;
 
 		default: break;
+
 		}
 		break;
 
 	case RECEIVEING_STATUS:
-		*( ( (uint8_t *) _new_status) + _transiever_index ) = data & 0xFF;
+		*( ( (uint8_t *) gr_status_p_tmp) + _transiever_index ) = data & 0xFF;
 		_transiever_index++;
 
 		if(_transiever_index == sizeof(gr_status_t) ) {
-			free(gr_status);
-			gr_status = _new_status;
+			//Обмениваем указатели
+			gr_status_t * tmp = gr_status_p;
+			gr_status_p = gr_status_p_tmp;
+			gr_status_p_tmp = tmp;
+
+			if(gr_status_p->mode == GR_MODE_LANDING) adxl_dointwork = true;
+
 			_transiever_index = 0;
 			receiver_state = RECEIVER_IDLE;
 		}
@@ -173,14 +203,13 @@ static void _receive() {
 }
 
 static void _transmit() {
+	uint16_t data = 0xFF;
+
 	switch(transmitter_state) {
-	case TRANSMITTER_IDLE:
-		SPI_I2S_SendData(SPI2, 0xBA);
-		break;
 
 	case TRANSMITTING_ACC:
 
-		SPI_I2S_SendData(SPI2, rscs_ringbuf_see_from_tail(adxl_buf, _acc_now));
+		data = rscs_ringbuf_see_from_tail(adxl_buf, _acc_now);
 		_acc_now++;
 
 		if(_acc_now == (_acc_high + 6)) {
@@ -190,7 +219,8 @@ static void _transmit() {
 		break;
 
 	case TRANSMITTING_SELFSTATUS:
-		SPI_I2S_SendData(SPI2, *( ((uint8_t *) &selfStatus ) + _transiever_index));
+
+		data = *( ((uint8_t *) &selfStatus ) + _transiever_index);
 		_transiever_index++;
 
 		if(_transiever_index == sizeof(selfStatus)){
@@ -198,5 +228,11 @@ static void _transmit() {
 			transmitter_state = TRANSMITTER_IDLE;
 		}
 		break;
+
+	case TRANSMITTER_IDLE:
+	default:
+		break;
 	}
+
+	SPI_I2S_SendData(SPI2, data);
 }

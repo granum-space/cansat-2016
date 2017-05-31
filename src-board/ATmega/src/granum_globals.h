@@ -1,3 +1,14 @@
+#include "librscs_config.h"
+#include "rscs/ads1115.h"
+#include "rscs/adc.h"
+#include "rscs/adxl345.h"
+#include "rscs/bmp280.h"
+#include "rscs/dht22.h"
+#include "rscs/ds18b20.h"
+#include "rscs/sdcard.h"
+#include "rscs/timeservice.h"
+#include "rscs/uart.h"
+
 
 //Дескрипторы устройств
 
