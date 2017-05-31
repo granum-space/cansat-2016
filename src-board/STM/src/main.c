@@ -36,43 +36,37 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-void testuart_init() {
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+#include <FreeRTOS.h>
+#include <task.h>
 
-	GPIO_InitTypeDef git;
-	git.GPIO_Mode = GPIO_Mode_AF_PP;
-	git.GPIO_Pin = GPIO_Pin_10; //Tx
-	git.GPIO_Speed = GPIO_Speed_50MHz;
+#include "led.h"
 
-	GPIO_Init(GPIOB, &git);
+void dummy_task(void * args)
+{
+	(void)args;
+	led_init();
 
-	git.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	git.GPIO_Pin = GPIO_Pin_11; //Rx
+	while(1)
+	{
+		led_toggle();
+		vTaskDelay(100);
+	}
 
-	GPIO_Init(GPIOB, &git);
 
-	USART_InitTypeDef itd;
-	itd.USART_BaudRate = 9600;
-	itd.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	itd.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
-	itd.USART_Parity = USART_Parity_No;
-	itd.USART_StopBits = USART_StopBits_1;
-	itd.USART_WordLength = USART_WordLength_8b;
-
-	USART_Init(USART3, &itd);
-
-	USART_Cmd(USART3, ENABLE);
 }
 
 int main(int argc, char* argv[]) {
-  // At this stage the system clock should have already been configured
-  // at high speed.
+	// At this stage the system clock should have already been configured
+	//at high speed.
 
-  // Infinite loop
+	// Infinite loop
 
-	testuart_init();
+	xTaskCreate(dummy_task, "task", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, NULL);
+
+	vTaskStartScheduler();
+	return 0;
+
+
 	adxl375_init(10000);
 	spiwork_init(adxl_buf);
 
@@ -83,7 +77,7 @@ int main(int argc, char* argv[]) {
 		rscs_gps_read(gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));
 
 		i--;i++;i--;
-  		i++;i--;i++;
+		i++;i--;i++;
 		i--;i++;i--;
 
 	}

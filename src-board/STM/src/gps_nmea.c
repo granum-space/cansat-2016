@@ -6,7 +6,7 @@
 
 #include <stm32f10x.h>
 
-#include "minmea.h"
+#include <minmea.h>
 
 #include "ringbuf.h"
 
