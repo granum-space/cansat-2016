@@ -20,3 +20,6 @@ extern rscs_ds18b20_t * ds18b20;
 extern rscs_sdcard_t * sdcard;
 extern rscs_uart_bus_t * uart_data;
 extern rscs_uart_bus_t * uart_debug;
+
+//Счётчик тиков
+extern uint32_t tick_counter;

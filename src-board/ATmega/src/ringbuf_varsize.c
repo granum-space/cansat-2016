@@ -40,7 +40,7 @@ void rscs_ringbuf_varsize_push(rscs_ringbuf_varsize_t * buf, void * data) {
 		}
 		//Проверяем, есть ли место
 		//Пишем значение в голову
-		memcpy(buf->head, data, buf->element_size);
+		memcpy(buf->buffer + buf->head, data, buf->element_size);
 		//Двигаем голову
 		buf->head += buf->element_size;
 		if(buf->head == buf->fullsize) buf->head = 0;

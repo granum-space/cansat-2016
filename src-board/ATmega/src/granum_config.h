@@ -59,4 +59,14 @@
 #define GR_THERMISTORS_ADC_CHANNEL_2 RSCS_ADC_SINGLE_1
 #define GR_THERMISTORS_ADC_CHANNEL_3 RSCS_ADC_SINGLE_2
 
+
+//Настройки SD
+#define GR_SD_CS_PORTREG PORTB
+#define GR_SD_CS_DDRREG DDRB
+#define GR_SD_CS_PIN_MASK (1 << 5)
+
+
+//Настройки сброса телеметрии
+#define GR_DUMP_FFS_SYNC_PERIOD 0
+
 #endif /* GRANUM_CONFIG_H_ */

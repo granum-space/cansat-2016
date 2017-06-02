@@ -35,7 +35,7 @@ rscs_e error = RSCS_E_NONE;
 
 int main() {
 
-	{ //Test purposes only
+	/*{ //Test purposes only
 
 #define STM_SELECT PORTB &= ~(1 << 4);
 #define STM_UNSELECT PORTB |= (1 << 4);
@@ -70,7 +70,7 @@ int main() {
 
 			STM_UNSELECT
 		}
-	}
+	}*/
 
 	while(GR_JMP_INACT_VAL) //Если поставили джампер неактивности, то ничего не делаем
 
@@ -132,6 +132,9 @@ static void init() {
 		dht22 = rscs_dht22_init(&PORTB, &PINB, &DDRB, 4, 7.0f);
 	}
 
+	{ //FatFS and SDcard
+
+	}
 }
 
 static void sensupdate_fast() {

@@ -9,3 +9,6 @@ rscs_ds18b20_t * ds18b20;
 rscs_sdcard_t * sdcard;
 rscs_uart_bus_t * uart_data;
 rscs_uart_bus_t * uart_debug;
+
+//Счётчик тиков
+uint32_t tick_counter;
