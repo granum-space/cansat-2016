@@ -13,7 +13,6 @@
 
 #include "ringbuf.h"
 
-extern rscs_ringbuf_t * adxl_buf;
 extern bool adxl_dointwork;
 
 typedef enum {

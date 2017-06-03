@@ -97,14 +97,7 @@ int adxl375_setRegisterValue(uint8_t registerAddress, uint8_t registerValue);
 
 adxl375_e_t adxl375_init(size_t bufsize) {
 
-
-	adxl_buf = rscs_ringbuf_init(bufsize);
-
-	return ADXL375_E_NONE;
-
 	hw_init();
-
-	adxl_buf = rscs_ringbuf_init(bufsize);
 
 	uint8_t devid = 0;
 	adxl375_getRegisterValue(0x00, &devid);
