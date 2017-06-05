@@ -80,7 +80,7 @@ int main() {
 	}*/
 
 	while(GR_JMP_INACT_VAL) //Если поставили джампер неактивности, то ничего не делаем
-
+		// NOTE: Тут нужны пустые скобочк или точка с запятой. Иначе в цикле будет крутиться init();
 	init();
 
 	while(1) { //Главный бесконечный цикл
@@ -101,6 +101,8 @@ int main() {
 	return 0;
 }
 
+
+// NOTE: В целом кода по датчикам уже довольно много. Имеет смысл вынести в отдельный файл
 static void init() {
 
 	rscs_time_init(); //Служба времени
@@ -141,8 +143,10 @@ static void init() {
 
 	{ //ADXL345
 		adxl345 = rscs_adxl345_initi2c(RSCS_ADXL345_ADDR_MAIN);
-		rscs_adxl345_set_range(adxl345, RSCS_ADXL345_RANGE_2G);
+		rscs_adxl345_set_range(adxl345, RSCS_ADXL345_RANGE_2G); // NOTE: Почему 2g? Зашкалит небось
 		rscs_adxl345_set_rate(adxl345, RSCS_ADXL345_RATE_100HZ);
+
+		// NOTE: Хорошо бы добавить тестовое чтение чтобы убедить что прибор жив. Хотя МБ мы сами сможем это понять по телеметрии?
 	}
 
 	{ //BMP280
@@ -155,15 +159,18 @@ static void init() {
 		};
 		OPR( rscs_bmp280_setup(bmp280, &params) )
 		OPR( rscs_bmp280_changemode(bmp280, RSCS_BMP280_MODE_NORMAL) )
+		// NOTE: Отказ bmp280 - не повод отменять инициализацию всего остального
 	}
 
 	{ //DS18B20
 		ds18b20 = rscs_ds18b20_init(0x00); //не используем адресацию
 		OPR( rscs_ds18b20_start_conversion(ds18b20) )
+		// NOTE: Отказ DS18B20 - не повод отменять инициализацию всего остального
 	}
 
 	{ //DHT22
 		dht22 = rscs_dht22_init(&PORTB, &PINB, &DDRB, 4, 7.0f);
+		// Хорошо бы добавить тестовое чтение, чтобы убедиться что датчик жив
 	}
 
 	{ //FatFS and SDcard
@@ -171,6 +178,7 @@ static void init() {
 		dump_init("d");
 		int why[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 		while(1){dump(why, sizeof(why));}
+		// TODO: Убрать бесконечный цикл
 	}
 
 	{ //TSL2561
@@ -197,6 +205,10 @@ static void _sensupdate_fast() {
 		rscs_tsl2561_read(tsl2561_A, &(telemetry_fast.luminosity[0].v0), &(telemetry_fast.luminosity[0].v1));
 		rscs_tsl2561_read(tsl2561_B, &(telemetry_fast.luminosity[1].v0), &(telemetry_fast.luminosity[1].v1));
 		rscs_tsl2561_read(tsl2561_C, &(telemetry_fast.luminosity[2].v0), &(telemetry_fast.luminosity[2].v1));
+
+		// NOTE: Идея - хранить измерения во времени, а не все три на одном такте
+		// чтобы можно было понять, что светло у нас уже довольно долго
+		// ну и нужна обработка ошибок
 	}
 
 	telemetry_fast.time = rscs_time_get();
@@ -216,6 +228,8 @@ static void _sensupdate_slow(){
 		rscs_bmp280_read(bmp280, &rawpress, &rawtemp);
 		rscs_bmp280_calculate(rscs_bmp280_get_calibration_values(bmp280), rawpress, rawtemp,
 								&(telemetry_slow.pressure), &(telemetry_slow.temperature_bmp));
+
+		// NOTE: Нужно бы добавить барометрическую высоту
 	}
 
 	{//STM32
@@ -240,6 +254,7 @@ static void _sensupdate_so_slow(){
 	}
 
 	rscs_dht22_read(dht22, &(telemetry_so_slow.humidity), &(telemetry_so_slow.temperature_dht));
+	// NOTE: Обработка ошибок
 
 	{//Thermistors
 
