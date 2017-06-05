@@ -17,7 +17,10 @@ typedef struct {
 	uint32_t tick;
 
 	accelerations_t accelerations;
-	uint16_t luminosity1, luminosity2, luminosity3;
+
+	struct {
+		uint16_t v0, v1;
+	} luminosity[3];
 
 	uint32_t time;
 
@@ -52,7 +55,7 @@ typedef struct {
 	int16_t temperature_dht;
 	uint16_t humidity;
 
-	uint16_t temperature_soil1, temperature_soil2, temperature_soil3;
+	int32_t temperature_soil[3];
 
 	struct {
 		uint16_t adc_low, adc_high;

@@ -11,6 +11,7 @@
 
 #include "comm_def.h"
 
+#include "dump.h"
 #include "librscs_config.h"
 #include "rscs/ads1115.h"
 #include "rscs/adc.h"
@@ -20,6 +21,7 @@
 #include "rscs/ds18b20.h"
 #include "rscs/sdcard.h"
 #include "rscs/timeservice.h"
+#include "rscs/tsl2561.h"
 #include "rscs/uart.h"
 #include "rscs/stdext/stdio.h"
 
@@ -32,6 +34,11 @@ static void init();
 
 #define OPR(OP) error = OP; if(error != RSCS_E_NONE) printf("ERROR %d", error);
 rscs_e error = RSCS_E_NONE;
+
+static void _sensupdate_fast();
+static void _sensupdate_slow();
+static void _sensupdate_so_slow();
+
 
 int main() {
 
@@ -76,6 +83,20 @@ int main() {
 
 	init();
 
+	while(1) { //Главный бесконечный цикл
+		_sensupdate_fast(); //fast part
+
+
+		if((tick_counter % GR_TICK_SLOW_PRESCALER) == 0) { //slow part
+			_sensupdate_slow();
+		}
+
+		if((tick_counter % GR_TICK_SO_SLOW_PRESCALER) == 0) { //so slow part
+			_sensupdate_so_slow();
+		}
+
+		tick_counter++;
+	}
 
 	return 0;
 }
@@ -83,6 +104,17 @@ int main() {
 static void init() {
 
 	rscs_time_init(); //Служба времени
+
+	{//Structures init
+		telemetry_fast.marker = 0xACCA;
+		telemetry_fast.number = 0;
+
+		telemetry_slow.marker = 0xFCFC;
+		telemetry_slow.number = 0;
+
+		telemetry_so_slow.marker = 0xFC1A;
+		telemetry_so_slow.number = 0;
+	}
 
 	{ //UART для данных (ID_UART0)
 		uart_data = rscs_uart_init(RSCS_UART_ID_UART0, 	RSCS_UART_FLAG_ENABLE_RX
@@ -97,6 +129,8 @@ static void init() {
 		RSCS_DEBUG_INIT(uart_data)
 		stdin = stdout = rscs_make_uart_stream(uart_data);
 	}
+
+	rscs_spi_init();
 
 	rscs_i2c_init();
 	rscs_i2c_set_scl_rate(16);
@@ -133,20 +167,115 @@ static void init() {
 	}
 
 	{ //FatFS and SDcard
+		RSCS_DEBUG("FATFS\n");
+		dump_init("d");
+		int why[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+		while(1){dump(why, sizeof(why));}
+	}
+
+	{ //TSL2561
+		tsl2561_A = rscs_tsl2561_init(RSCS_TSL2561_ADDR_LOW);
+		tsl2561_B = rscs_tsl2561_init(RSCS_TSL2561_ADDR_HIGH);
+		tsl2561_C = rscs_tsl2561_init(RSCS_TSL2561_ADDR_FLOATING);
+
+		rscs_tsl2561_setup(tsl2561_A);
+		rscs_tsl2561_setup(tsl2561_B);
+		rscs_tsl2561_setup(tsl2561_C);
+	}
+}
+
+static uint32_t _checksumm_calculate(void * data, size_t datasize);
+
+static void _sensupdate_fast() {
+	{//ADXL345
+		rscs_adxl345_read(adxl345, 	&(telemetry_fast.accelerations.x),
+									&(telemetry_fast.accelerations.y),
+									&(telemetry_fast.accelerations.z));
+	}
+
+	{//TSL2561
+		rscs_tsl2561_read(tsl2561_A, &(telemetry_fast.luminosity[0].v0), &(telemetry_fast.luminosity[0].v1));
+		rscs_tsl2561_read(tsl2561_B, &(telemetry_fast.luminosity[1].v0), &(telemetry_fast.luminosity[1].v1));
+		rscs_tsl2561_read(tsl2561_C, &(telemetry_fast.luminosity[2].v0), &(telemetry_fast.luminosity[2].v1));
+	}
+
+	telemetry_fast.time = rscs_time_get();
+	telemetry_fast.tick = tick_counter;
+
+	telemetry_fast.checksumm = _checksumm_calculate(&telemetry_fast, sizeof(telemetry_fast) - sizeof(telemetry_fast.checksumm));
+
+	dump(&telemetry_fast, sizeof(telemetry_fast));
+
+	telemetry_fast.number++;
+}
+
+static void _sensupdate_slow(){
+
+	{//BMP280
+		int32_t rawpress, rawtemp;
+		rscs_bmp280_read(bmp280, &rawpress, &rawtemp);
+		rscs_bmp280_calculate(rscs_bmp280_get_calibration_values(bmp280), rawpress, rawtemp,
+								&(telemetry_slow.pressure), &(telemetry_slow.temperature_bmp));
+	}
+
+	{//STM32
+		//TODO запрос статуса у STM32
+	}
+
+	telemetry_slow.time = rscs_time_get();
+	telemetry_slow.tick = tick_counter;
+
+	telemetry_slow.checksumm = _checksumm_calculate(&telemetry_slow, sizeof(telemetry_slow) - sizeof(telemetry_slow.checksumm));
+
+	dump(&telemetry_slow, sizeof(telemetry_slow));
+
+	telemetry_slow.number++;
+}
+
+static void _sensupdate_so_slow(){
+
+	if(rscs_ds18b20_check_ready()) {//DS18B20
+		rscs_ds18b20_read_temperature(ds18b20, &(telemetry_so_slow.temperature_ds18));
+		rscs_ds18b20_start_conversion(ds18b20);
+	}
+
+	rscs_dht22_read(dht22, &(telemetry_so_slow.humidity), &(telemetry_so_slow.temperature_dht));
+
+	{//Thermistors
+
+		switch(tick_counter % (GR_TICK_SO_SLOW_PRESCALER * 3) ) {
+
+		case 0:
+			rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[0]));
+			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_2);
+			break;
+
+		case GR_TICK_SO_SLOW_PRESCALER:
+			rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[1]));
+			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_3);
+			break;
+
+		default:
+			rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[2]));
+			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_1);
+			break;
+		}
 
 	}
 }
 
-static void sensupdate_fast() {
+static uint32_t _checksumm_calculate(void * data, size_t datasize) {
+	uint32_t result = 0;
+
+	for(int i = 0; i < datasize; i++) {
+		result += ((uint8_t *)data) [i];
+	}
+
+	return result;
 
 }
 
 /*static void sensupdate() {
-
-	for(int i = 0; i < 10; i++) {
-		RSCS_DEBUG("ADXL345: reading: %d\n", rscs_adxl345_read(adxl345, &(packet.accelerations[i].x), &(packet.accelerations[i].y), &(packet.accelerations[i].z)));
-		_delay_ms(100);
-	}
 
 	printf("BMP: status: 0x%02X\n", rscs_bmp280_read_status(bmp280));
 	printf("BMP: status: %d\n", rscs_bmp280_read(bmp280, &rawpress, &rawtemp));

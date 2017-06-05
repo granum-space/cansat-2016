@@ -15,8 +15,11 @@
 
 
 //Настройки вывода джампера-активатора
-#define GR_JMP_INACT_VAL (PINA & (1 << 1))
+#define GR_JMP_INACT_VAL (PINB & (1 << 1))
 
+#define GR_TICK_DELAY_MS 100
+#define GR_TICK_SLOW_PRESCALER 10
+#define GR_TICK_SO_SLOW_PRESCALER 30
 
 //Настройки дигипота
 #define DP_CS_PORTREG PORTD
@@ -61,9 +64,9 @@
 
 
 //Настройки SD
-#define GR_SD_CS_PORTREG PORTB
-#define GR_SD_CS_DDRREG DDRB
-#define GR_SD_CS_PIN_MASK (1 << 5)
+#define GR_SD_CS_PORTREG PORTC
+#define GR_SD_CS_DDRREG DDRC
+#define GR_SD_CS_PIN_MASK (1 << 0)
 
 
 //Настройки сброса телеметрии
