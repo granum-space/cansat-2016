@@ -72,4 +72,8 @@
 //Настройки сброса телеметрии
 #define GR_DUMP_FFS_SYNC_PERIOD 0
 
+//Настройки UART
+#define GR_UART_DATA_ID RSCS_UART_ID_UART0
+#define GR_UART_DEBUG_ID RSCS_UART_ID_UART1
+
 #endif /* GRANUM_CONFIG_H_ */
