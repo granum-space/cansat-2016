@@ -59,7 +59,7 @@ void adxlbuf_waits_lock(accelerations_t current_data)
 	z_g = (current_data.z)/2049.18033f;
 	acc = sqrt(x_g*x_g + y_g*y_g + z_g*z_g);
 
-	if (acc < 1) k++;
+	if (acc < 1) k++; // NOTE: Очень странное условие, что оно значит?
 	if (k > 10) status = STATUS_LOCKED;
 }
 

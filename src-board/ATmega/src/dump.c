@@ -1,10 +1,3 @@
-/*
- * dump.c
- *
- *  Created on: 05 окт. 2016 г.
- *      Author: snork
- */
-
 #include "dump.h"
 
 #include <stdio.h>
@@ -29,14 +22,14 @@ static inline void _initFile() {
 	// монтируем диск
 
 	if (!fs_mounted )
-	  do {
-		 res = f_mount(&fs, "0", 1);
-		 i++;
-		 if (i >= 3)
-		 {
-			 return;
-		 }
-	  } while (res != FR_OK);
+		do {
+			res = f_mount(&fs, "0", 1);
+			i++;
+			if (i >= 3)
+			{
+				return;
+			}
+		} while (res != FR_OK);
 	fs_mounted = true;
 
 	if(!fs_goodFile) {
@@ -44,39 +37,38 @@ static inline void _initFile() {
 		char fname[15];
 		for (i = 0; i < SIZE_MAX; i++)
 		{
-		  fname[0] ='\0';
-		  sprintf(fname, "0:/%s%u.bin", fs_filename, i);
-		  FILINFO info;
-		  if ((res = f_stat(fname, &info)) == FR_NO_FILE)
-		  {
-			 // отлично - такого файла нет!
-			 RSCS_DEBUG("dump file name '%s' ok\n", fname);
-			 break;
-		  }
-		  else if (res == FR_OK)
-		  {
-			  RSCS_DEBUG("dump file name '%s' already exists\n", fname);
-		  }
-		  else
-		  {
-			  RSCS_DEBUG("dump fname error '%s': err: %d\n", fname, res);
-			  return;
-		  }
-
+			fname[0] ='\0';
+			sprintf(fname, "0:/%s%u.bin", fs_filename, i);
+			FILINFO info;
+			if ((res = f_stat(fname, &info)) == FR_NO_FILE)
+			{
+				// отлично - такого файла нет!
+				RSCS_DEBUG("dump file name '%s' ok\n", fname);
+				break;
+			}
+			else if (res == FR_OK)
+			{
+				RSCS_DEBUG("dump file name '%s' already exists\n", fname);
+			}
+			else
+			{
+				RSCS_DEBUG("dump fname error '%s': err: %d\n", fname, res);
+				return;
+			}
 		}
 
-	   // предполагается что с именем файла мы всетаки определились раз мы тут
-	   if (FR_OK != (res = f_open(&fs_file, fname, FA_WRITE | FA_OPEN_ALWAYS | FA_OPEN_APPEND)))
-	   {
+		// предполагается что с именем файла мы всетаки определились раз мы тут
+		if (FR_OK != (res = f_open(&fs_file, fname, FA_WRITE | FA_OPEN_ALWAYS | FA_OPEN_APPEND)))
+		{
 		  RSCS_DEBUG("open error = %d\n", res);
-	   }
+		}
 
-	   else fs_goodFile = true;
+		else fs_goodFile = true;
 	}
 }
 
 static inline void _initUart() {
-	uart_debug = rscs_uart_init(RSCS_UART_ID_UART0, 	RSCS_UART_FLAG_ENABLE_RX
+	uart_debug = rscs_uart_init(RSCS_UART_ID_UART0,     RSCS_UART_FLAG_ENABLE_RX
 													|RSCS_UART_FLAG_BUFFER_RX
 													|RSCS_UART_FLAG_ENABLE_TX
 													|RSCS_UART_FLAG_BUFFER_TX);
@@ -105,14 +97,14 @@ void dump(const void * data, size_t datasize)
 		FRESULT res;
 		// пишем на флешку
 		if ((res = f_write(&fs_file, data, datasize, &dummy)) != FR_OK)
-		  RSCS_DEBUG("write error %d\n", res);
+			RSCS_DEBUG("write error %d\n", res);
 
 		static int_fast32_t sync_counter = 0;
 		if (sync_counter >= GR_DUMP_FFS_SYNC_PERIOD)
 		{
-		  if ((res = f_sync(&fs_file)) != FR_OK)
-			 RSCS_DEBUG("sync error %d\n", res);
-		  sync_counter = 0;
+			if ((res = f_sync(&fs_file)) != FR_OK)
+				RSCS_DEBUG("sync error %d\n", res);
+			sync_counter = 0;
 		}
 		sync_counter++;
 	}
