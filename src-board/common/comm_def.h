@@ -11,6 +11,11 @@ typedef struct {
 	int16_t x, y, z;
 } accelerations_t;
 
+typedef struct {
+	int16_t adc_low, adc_high;
+	uint32_t resistance;
+} soilresist_data_t;
+
 //Телеметрийные пакеты
 typedef struct {
 	uint16_t marker; //Must be 0xACCA
@@ -23,6 +28,7 @@ typedef struct {
 
 	struct {
 		uint16_t v0, v1;
+		unsigned int lux;
 	} luminosity[3];
 	rscs_e tsl2561_A_error, tsl2561_B_error, tsl2561_C_error;
 
@@ -41,8 +47,10 @@ typedef struct {
 	int32_t temperature_bmp;
 	rscs_e bmp280_error;
 
-	float latitude, longtitude, height;
+	float latitude, longtitude, altitude;
 	bool gps_hasFix;
+
+	soilresist_data_t soilresist_data[3];
 
 	uint32_t time;
 
@@ -56,7 +64,7 @@ typedef struct {
 	uint32_t tick;
 
 	int16_t temperature_ds18;
-	rscs_e ds18b20_error;
+	rscs_e ds18b20_error_read, ds18b20_error_conversion;
 
 	int16_t temperature_dht;
 	uint16_t humidity;
@@ -64,11 +72,6 @@ typedef struct {
 
 	int32_t temperature_soil[3];
 	rscs_e thermistor_A_error, thermistor_B_error, thermistor_C_error;
-
-	struct {
-		uint16_t adc_low, adc_high;
-		float resistance;
-	} soilresist_data[3];
 
 	uint32_t time;
 
@@ -81,12 +84,10 @@ typedef struct {
 	accelerations_t data[];
 } gr_telemetry_adxl375_t;
 
-//Статусные пакеты TODO: Василий: Рассмотреть вомзожность упразднения режима LIFTING, присвоить енумам значения
 typedef struct {
 	enum {
 		GR_MODE_IDLE = 0,
-		GR_MODE_AWAITING_START,
-		GR_MODE_LIFTING,
+		GR_MODE_AWAITING_EXIT,
 		GR_MODE_AWAITING_PARACHUTE,
 		GR_MODE_AWAITING_LEGS,
 		GR_MODE_LANDING,

@@ -32,3 +32,10 @@ extern uint32_t tick_counter;
 extern gr_telemetry_fast_t telemetry_fast;
 extern gr_telemetry_slow_t telemetry_slow;
 extern gr_telemetry_so_slow_t telemetry_so_slow;
+
+//Статусы
+extern gr_status_stm_t gr_status_stm;
+extern gr_status_t gr_status;
+
+//Порог освещённости для опознания выхода из ракеты (в люксах)
+extern unsigned int gr_luminosity_threshhold;

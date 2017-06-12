@@ -15,43 +15,38 @@
 
 
 //Настройки вывода джампера-активатора
-#define GR_JMP_INACT_VAL (PINB & (1 << 1))
+#define GR_JMP_INACT_VAL (PINA & (1 << 0))
 
-#define GR_TICK_DELAY_MS 100
-#define GR_TICK_SLOW_PRESCALER 10
-#define GR_TICK_SO_SLOW_PRESCALER 30
+#define GR_TICK_DELAY_MS 150
+#define GR_TICK_SLOW_PRESCALER 1
+#define GR_TICK_SO_SLOW_PRESCALER 1
 
 //Настройки дигипота
-#define DP_CS_PORTREG PORTD
-#define DP_CS_DDRREG DDRD
-#define DP_CS_PIN 2
+#define DP_CS_PORTREG PORTB
+#define DP_CS_DDRREG DDRB
+#define DP_CS_PIN 4
 
 
 //Настройки мультиплексора
-#define MPX1_A_PORTREG PORTD
-#define MPX1_A_DDRREG DDRD
-#define MPX1_A_PIN 3
+#define MPX1_A_PORTREG PORTA
+#define MPX1_A_DDRREG DDRA
+#define MPX1_A_PIN 4
 
-#define MPX1_B_PORTREG PORTD
-#define MPX1_B_DDRREG DDRD
-#define MPX1_B_PIN 4
+#define MPX1_B_PORTREG PORTA
+#define MPX1_B_DDRREG DDRA
+#define MPX1_B_PIN 5
 
-#define MPX2_A_PORTREG PORTD
-#define MPX2_A_DDRREG DDRD
-#define MPX2_A_PIN 5
+#define MPX2_A_PORTREG PORTA
+#define MPX2_A_DDRREG DDRA
+#define MPX2_A_PIN 6
 
-#define MPX2_B_PORTREG PORTD
-#define MPX2_B_DDRREG DDRD
-#define MPX2_B_PIN 6
+#define MPX2_B_PORTREG PORTA
+#define MPX2_B_DDRREG DDRA
+#define MPX2_B_PIN 3
 
-#define MPX1_E_PORTREG PORTD
-#define MPX1_E_DDRREG DDRD
-#define MPX1_E_PIN 7
-
-#define MPX2_E_PORTREG PORTD
-#define MPX2_E_DDRREG DDRD
-#define MPX2_E_PIN 8
-
+#define MPX_E_PORTREG PORTA
+#define MPX_E_DDRREG DDRA
+#define MPX_E_PIN 7
 
 //Настройки ADS1115
 #define GR_ADS1115_ADDR RSCS_ADS1115_ADDR_GND
@@ -64,9 +59,9 @@
 
 
 //Настройки SD
-#define GR_SD_CS_PORTREG PORTC
-#define GR_SD_CS_DDRREG DDRC
-#define GR_SD_CS_PIN_MASK (1 << 0)
+#define GR_SD_CS_PORTREG PORTB
+#define GR_SD_CS_DDRREG DDRB
+#define GR_SD_CS_PIN_MASK (1 << 5)
 
 
 //Настройки сброса телеметрии
@@ -75,5 +70,17 @@
 //Настройки UART
 #define GR_UART_DATA_ID RSCS_UART_ID_UART0
 #define GR_UART_DEBUG_ID RSCS_UART_ID_UART1
+
+//Макросы управления CS к STM32
+#define GR_STM_SELECT PORTB &= ~(1 << 6);
+#define GR_STM_UNSELECT PORTB |= (1 << 6);
+
+#define GR_STM_INIT_CS DDRB |= (1 << 6); GR_STM_SELECT
+
+//Размер буфера для ускорений на STM (в измерениях)
+#define GR_STM_ACCBUF_SIZE 2000
+
+//Порого срабатывания для стержней (Ом)
+#define GR_SOILRES_THRESHOLD 100
 
 #endif /* GRANUM_CONFIG_H_ */
