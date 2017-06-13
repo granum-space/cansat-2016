@@ -18,6 +18,7 @@
 
 #include "soil_res.h"
 #include "granum_config.h"
+#include "comm_def.h"
 
 
 #include "rscs/ads1115.h"
@@ -57,17 +58,16 @@ void rscs_soil_res_init()
 	// настройка первого мультиплексора
 	set_bus_high(&MPX1_A_DDRREG, MPX1_A_PIN);
 	set_bus_high(&MPX1_B_DDRREG, MPX1_B_PIN);
-	set_bus_high(&MPX1_E_DDRREG, MPX1_E_PIN);
+
+	set_bus_high(&MPX_E_DDRREG, MPX_E_PIN);
 	/* если на пин Enabled выставить 1, то все переключатели будут выключены
 	 * если 0, то включены
 	 * сначала пусть они будут выключены */
-	set_bus_high(&MPX1_E_PORTREG, MPX1_E_PIN);
+	set_bus_high(&MPX_E_PORTREG, MPX_E_PIN);
 
 	// настройка второго мультиплексора
 	set_bus_high(&MPX2_A_DDRREG, MPX2_A_PIN);
 	set_bus_high(&MPX2_B_DDRREG, MPX2_B_PIN);
-	set_bus_high(&MPX2_E_DDRREG, MPX2_E_PIN);
-	set_bus_high(&MPX2_E_PORTREG, MPX2_E_PIN);
 
 	// настройка ацп
 	adc = rscs_ads1115_init(GR_ADS1115_ADDR);
@@ -80,8 +80,7 @@ void rscs_soil_res_init()
 	rscs_spi_set_pol(RSCS_SPI_POL_SAMPLE_RISE_SETUP_FALL);
 
 	// включить мультиплексорs!
-	set_bus_low(&MPX1_E_PORTREG, MPX1_E_PIN);
-	set_bus_low(&MPX2_E_PORTREG, MPX2_E_PIN);
+	set_bus_low(&MPX_E_PORTREG, MPX_E_PIN);
 
 }
 
@@ -117,14 +116,14 @@ void rscs_digipot_set_res(uint32_t resistance)
 	_delay_us(10);
 }
 
-rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13, uint8_t precision)
+rscs_e rscs_get_soil_res(soilresist_data_t*soilresist_data, uint8_t precision)
 {
-	int16_t value;
+	rscs_e error;
+
 	for (int j = 0; j < 3; j++)
 	{
-		//выключить мультиплексорs!
-		set_bus_low(&MPX1_E_PORTREG, MPX1_E_PIN);
-		set_bus_low(&MPX2_E_PORTREG, MPX2_E_PIN);
+		//включить мультиплексорs!
+		set_bus_low(&MPX_E_PORTREG, MPX_E_PIN);
 		switch (j)
 		{
 		case 0:
@@ -155,8 +154,6 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13, uint
 			set_bus_high(&MPX2_B_PORTREG, MPX2_B_PIN);
 		};
 
-		rscs_e error;
-
 		int16_t parrots_dif1, parrots_dif2, parrots_difX;
 		uint32_t res1 = 0, res2 = 200000, resX;
 
@@ -165,17 +162,27 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13, uint
 		rscs_digipot_set_res(res2);
 		error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif2);
 
+		switch(j)
+		{
+			case 0:
+				soilresist_data[0].adc_low = parrots_dif1;
+				soilresist_data[0].adc_high = parrots_dif2;
+				break;
+			case 1:
+				soilresist_data[1].adc_low = parrots_dif1;
+				soilresist_data[1].adc_high = parrots_dif2;
+				break;
+			case 2:
+				soilresist_data[2].adc_low = parrots_dif1;
+				soilresist_data[2].adc_high = parrots_dif2;
+				break;
+		}
+
 		/* Рассматриваем зависимость разницы потенциалов от значения сопротивления на дигипоте
 		 * как монотонную функцию */
 
 		for (int i = 0; i < precision; i++)
 		{
-			/*rscs_digipot_set_res(res1);
-			error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif1);
-			printf("left: %d", parrots_dif1);
-			rscs_digipot_set_res(res2);
-			error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif2);
-			printf(" right: %d\n", parrots_dif2); */
 			resX = (res2 + res1) / 2;
 			rscs_digipot_set_res(resX);
 			error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_difX);
@@ -189,9 +196,22 @@ rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13, uint
 					res1 = resX;
 				}
 					else break;
-			}
-			printf("in volts at %d: %lu\n", j, resX);
+
+			//printf("at %d at % d res1 = %ld, res2 = %ld \n", j, i, res1, res2);
 		}
 
-		return RSCS_E_NONE;
+			switch(j)
+			{
+			    case 0:
+			    	soilresist_data[0].resistance = resX;
+			    	break;
+			    case 1:
+			    	soilresist_data[1].resistance = resX;
+			    	break;
+			    case 2:
+			    	soilresist_data[2].resistance = resX;
+			}
+		}
+
+		return error;
 	}

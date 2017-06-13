@@ -88,7 +88,7 @@ void dump_init(char * filename)
 
 void dump(const void * data, size_t datasize)
 {
-	rscs_uart_write(uart_debug, data, datasize);
+	rscs_uart_write(uart_data, data, datasize);
 
 	_initFile();
 

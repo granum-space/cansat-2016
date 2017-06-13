@@ -11,6 +11,7 @@
 #include "granum_config.h"
 #include "rscs/spi.h"
 #include "rscs/ads1115.h"
+#include "comm_def.h"
 
 // шаг потенциометра
 #define DP_STEP 392
@@ -37,6 +38,6 @@ void rscs_digipot_set_res(uint32_t resistance);
  * после многочисленных экспериментов было выяснено, что значение precision в 15 итераций
  * будет вполне приемлемым */
 
-rscs_e rscs_get_soil_res(uint32_t *res12, uint32_t *res23, uint32_t *res13, uint8_t precision);
+rscs_e rscs_get_soil_res(soilresist_data_t * soilresist_data, uint8_t precision);
 
 #endif /* DIGIPOT_H_ */
