@@ -29,7 +29,8 @@ void stm32_transmitSystemStatus() {
 }
 
 void stm32_getAccelerations() {
-
+	// NOTE: ? Что тут вообще происходит? Нужен отдельный конечный автомат, который будет сбрасывать эти данные отдельным пакетом
+	// с метаданными (номер попытки сброса всего буфера, отступ и размеры текущего блока)
 	int step = 100;
 	accelerations_t buf[step];
 	for(uint32_t i = 0; i < GR_STM_ACCBUF_SIZE; i += step) {

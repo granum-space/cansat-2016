@@ -13,6 +13,9 @@
 #include "rscs/ads1115.h"
 #include "comm_def.h"
 
+
+// NOTE: этим макросам не место в хедере
+
 // шаг потенциометра
 #define DP_STEP 392
 

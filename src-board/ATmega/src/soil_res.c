@@ -75,7 +75,9 @@ void rscs_soil_res_init()
 	rscs_ads1115_set_datarate(adc, RSCS_ADS1115_DATARATE_475SPS);
 
 	//Настройки SPI под дигипот:
-    rscs_spi_set_clk(1000);
+	// NOTE: конфликтует с настройкой под SD и под STM32. Возможно следует настраивать SPI
+	// в каждом модуле перед началом обмена с соответствующим устройством
+	rscs_spi_set_clk(1000);
 	rscs_spi_set_order(RSCS_SPI_ORDER_MSB_FIRST);
 	rscs_spi_set_pol(RSCS_SPI_POL_SAMPLE_RISE_SETUP_FALL);
 
@@ -161,6 +163,7 @@ rscs_e rscs_get_soil_res(soilresist_data_t*soilresist_data, uint8_t precision)
 		error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif1);
 		rscs_digipot_set_res(res2);
 		error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif2);
+		// NOTE: Ошибки не аналиизруются
 
 		switch(j)
 		{
@@ -186,6 +189,7 @@ rscs_e rscs_get_soil_res(soilresist_data_t*soilresist_data, uint8_t precision)
 			resX = (res2 + res1) / 2;
 			rscs_digipot_set_res(resX);
 			error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_difX);
+			// NOTE: Ошибки снова не анализируются
 
 			if (parrots_difX > 0)
 			{

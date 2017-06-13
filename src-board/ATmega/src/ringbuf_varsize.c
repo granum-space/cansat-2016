@@ -31,6 +31,9 @@ void rscs_ringbuf_varsize_deinit(rscs_ringbuf_varsize_t * buf){
 	free(buf);
 }
 
+// NOTE: По-прежнему тут много очень серьезных варнингов.
+
+
 void rscs_ringbuf_varsize_push(rscs_ringbuf_varsize_t * buf, void * data) {
 	/*ATOMIC_BLOCK(ATOMIC_RESTORESTATE)  FIXME атомарность*/ {
 		if(buf->size == buf->fullsize) {

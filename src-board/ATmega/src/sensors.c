@@ -14,6 +14,10 @@ static uint32_t _checksumm_calculate(void * data, size_t datasize);
 void sens_init() {
 
 	stm32_initExchange();
+	// NOTE: Я бы вынес все что связано с stm32 отдельно, как оно уже есть - отдельным модулем
+	// так как оно требует специального подхода к сбросу телеметрии
+	// с собственным конечным автоматом и под общую гребенку не сильно загоняется
+
 
 	{//Structures init
 		telemetry_fast.marker = 0xACCA;
@@ -55,7 +59,7 @@ void sens_init() {
 		rscs_ds18b20_start_conversion(ds18b20);
 	}
 
-	dht22 = rscs_dht22_init(&PORTC, &PINC, &DDRC, 1, 7.0f); //DHT22
+	dht22 = rscs_dht22_init(&PORTC, &PINC, &DDRC, 1, 7.0f); //DHT22 	// NOTE: Вынести в конфиг
 
 	dump_init("granum"); //FatFS and SDcard
 
@@ -64,6 +68,7 @@ void sens_init() {
 		tsl2561_B = rscs_tsl2561_init(RSCS_TSL2561_ADDR_HIGH);
 		tsl2561_C = rscs_tsl2561_init(RSCS_TSL2561_ADDR_FLOATING);
 
+		// NOTE: Отладочные принты.. Не понятно - стоит ли их убрать или наоборот расставить побольше?
 		printf("TSL error %d\n", rscs_tsl2561_setup(tsl2561_A));
 		printf("TSL error %d\n", rscs_tsl2561_setup(tsl2561_B));
 		printf("TSL error %d\n", rscs_tsl2561_setup(tsl2561_C));
