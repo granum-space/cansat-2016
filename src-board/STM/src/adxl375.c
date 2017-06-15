@@ -17,19 +17,6 @@
 
 #define ADXL_SPI SPI1
 
-rscs_ringbuf_t * adxl_buf;
-bool adxl_dointwork = 1;
-
-void EXTI9_5_IRQHandler() {
-	if(GPIO_ReadOutputDataBit(GPIOA, GPIO_Pin_3) & adxl_dointwork) {
-		int16_t tmp[3];
-		for(int i = 0; i < ADXL_WATERMARK_VAL; i++) {
-			adxl375_read(tmp, tmp + 1, tmp + 2);
-			rscs_ringbuf_push_many(adxl_buf, tmp, sizeof(tmp));
-		}
-	}
-}
-
 /* Команды на чтение и запись */
 #define ADXL375_SPI_READ        (1 << 7)	//бит на чтение
 #define ADXL375_SPI_WRITE       (0 << 7)	//бит на запись
