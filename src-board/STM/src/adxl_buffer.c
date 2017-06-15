@@ -27,7 +27,7 @@ void adxlbuf_init()
 	status = STATUS_SIMPLE_READ;
 }
 
-// Проверка - было ли обнаружено событие удара и был ли заблокирован буфер
+// Проверка x_g- было ли обнаружено событие удара и был ли заблокирован буфер
 bool adxlbuf_is_triggered(void)
 {
 	return status == STATUS_LOCKED;

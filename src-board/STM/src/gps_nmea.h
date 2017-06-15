@@ -23,4 +23,6 @@ void rscs_gps_deinit(rscs_gps_t * gps);
 // если в буфере UART еще не накопилось необходимое сообщение - вернет ошибку RSCS_E_BUSY
 int rscs_gps_read(rscs_gps_t * gps, float * lon, float * lat, float * height, bool * hasFix);
 
+void gps_task(void * args);
+
 #endif /* GPS_NMEA_H_ */

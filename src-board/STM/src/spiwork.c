@@ -153,6 +153,8 @@ static void _receive() {
 			break;
 
 		case AMRQ_SELFSTATUS_Tx:
+			_transiever_index = 0;
+
 			transmitter_state = TRANSMITTING_SELFSTATUS;
 			xSemaphoreTakeFromISR(selfStatusMutex, NULL);
 
@@ -198,10 +200,9 @@ static void _receive() {
 		_acc_params_shift += 8;
 
 		if (_acc_params_shift == 64){
-			_acc_high *= 6;
-			_acc_low *= 6;
 			_acc_now = _acc_low;
 			_acc_params_shift = 0;
+			_transiever_index = 0;
 			receiver_state = RECEIVER_IDLE;
 			transmitter_state = TRANSMITTING_ACC;
 		}
@@ -214,24 +215,30 @@ static void _receive() {
 static void _transmit() {
 	uint16_t data = 0xFF;
 
+	accelerations_t * acceleration;
+
 	switch(transmitter_state) {
 
 	case TRANSMITTING_ACC:
+		acceleration = rscs_ringbuf_varsize_see_from_tail(adxl_buf, _acc_now);
 
-		data = rscs_ringbuf_varsize_see_from_tail(&adxl_buf, _acc_now);
-		_acc_now++;
+		data = ((uint8_t *) acceleration) [_transiever_index];
+		_transiever_index++;
+
+		if(_transiever_index == sizeof(accelerations_t)) {
+			_transiever_index = 0;
+			_acc_now++;
+		}
 
 		if(_acc_now == (_acc_high + 6)) {
+			_transiever_index = 0;
 			transmitter_state = TRANSMITTER_IDLE;
 		}
 
 		break;
 
 	case TRANSMITTING_SELFSTATUS:
-		// FIXME: Василий: не потокобезопасно
-		// следует по получению команды с выключенными прерываниями перекинуть всю структуру статуса в буфер
-		// и отдавать оттуда
-		data = *( ((uint8_t *) &selfStatus ) + _transiever_index);
+		data = *( ((uint8_t *) &_status ) + _transiever_index);
 		_transiever_index++;
 
 		if(_transiever_index == sizeof(selfStatus)){
