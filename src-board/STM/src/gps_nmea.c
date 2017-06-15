@@ -4,11 +4,12 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <stm32f10x.h>
+#include <stm32f10x_conf.h>
 
 #include <minmea.h>
 
 #include "ringbuf.h"
+#include "globals.h"
 
 #include "gps_nmea.h"
 
@@ -108,51 +109,9 @@ static bool _handle_message(const char * msg_signed, float * lon, float * lat,
 	*hasFix = frame.fix_quality != 0;
 
 	return 1;
-
-	/*char chksum = msg[1]; // пропускаем нулевой символ $
-
-	size_t chksumLimit = msgSize - 5; // Пропускаем *XX\r\n
-	for (size_t i = 2; i < chksumLimit; i++)
-		chksum = chksum ^ msg[i];
-
-	int expectedChksumValue;
-	if (sscanf(msg_signed + chksumLimit+1, "%X", &expectedChksumValue) == 0)
-		return false;
-
-	if (chksum != expectedChksumValue)
-		return false;
-
-	const char * results[16];
-	uint8_t numbersOfStr = _explode(msg_signed, msgSize, ',', results, sizeof(results));
-	if (numbersOfStr == 0)
-		return false;
-
-	// разбираем долготу
-	if (sscanf(results[1], "%f", lon) != 1)
-		return false;
-
-	if(*results[2] != 'N')
-		*lon *= -1;
-
-	//разбираем широту
-	if (sscanf(results[3], "%f", lat) != 1)
-		return false;
-
-	if (*results[4] != 'E')
-		*lat *= -1;
-
-	//разбираем высоту
-	if (sscanf(results[9], "%f", height) != 1)
-		return false;
-
-	//проверка качества
-	int fixQual;
-	if (sscanf(results[5], "%i", &fixQual) != 0)
-		*hasFix = false;
-		else
-		*hasFix = true;
-	return true;*/
 }
+
+
 
 int rscs_uart_read_some(USART_TypeDef * uart, void * data, size_t count) {
 	(void) uart;
@@ -240,4 +199,14 @@ again:
 
 	// если сообщения не нашлось, нужно вернуть RSCS_E_BUSY
 	return -1;
+}
+
+void gps_task(void * args) {
+	(void) args;
+
+	xSemaphoreTake(selfStatusMutex, 0);
+
+	rscs_gps_read(gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));
+
+	xSemaphoreGive(selfStatusMutex);
 }

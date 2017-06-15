@@ -16,5 +16,7 @@ gr_status_stm_t selfStatus = {
 		.lat = NAN, .lon = NAN, .alt = NAN
 };
 
+xSemaphoreHandle selfStatusMutex;
+
 //Дескриптор GPS
 rscs_gps_t * gps;

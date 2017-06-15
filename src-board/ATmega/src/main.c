@@ -38,7 +38,7 @@
 static void init();
 
 static unsigned int _luminosity_lastdata[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-static rscs_e _luminosity_lasterrors[] = {-10, -10, -10, -10, -10, -10, -10, -10, -10};
+static rscs_e _luminosity_lasterrors[] = {-127, -127, -127, -127, -127, -127, -127, -127, -127};
 
 static double _thermistors_recalc(int16_t adc_data){
 	/*double r1 = 100000.0*(adc_data*5.0/1024.0)/(5.0 - adc_data*5.0/1024.0);
@@ -58,6 +58,51 @@ static double _thermistors_recalc(int16_t adc_data){
 	  return steinhart;
 }
 
+static enum {
+	RADIO_STATE_IDLE,
+	RADIO_STATE_COLLECTING
+} radio_state;
+static uint8_t radio_bytes[9];
+static uint8_t radio_index;
+
+void radio_checkForCommads(void) {
+	uint8_t databyte = 0;
+
+	while(rscs_uart_read_some(uart_data, &databyte, 1)) {
+		switch (radio_state) {
+			case RADIO_STATE_IDLE:
+				if(databyte == GSRQ_START) radio_state = RADIO_STATE_COLLECTING;
+				break;
+
+			case RADIO_STATE_COLLECTING:
+				radio_bytes[radio_index] = databyte;
+				radio_index++;
+
+				if(radio_index > 9) {
+					radio_index = 0;
+
+					if( *( (uint64_t *)radio_bytes) == GSRQ_CHMOD) {
+						if(gr_status.mode == GR_MODE_IDLE) gr_status.mode = GR_MODE_AWAITING_EXIT;
+					}
+
+					else if( *( (uint64_t*)radio_bytes) == GSRQ_CHLUX) {
+						gr_luminosity_threshhold = radio_bytes[8];
+					}
+				}
+
+				break;
+
+			default:
+				break;
+		}
+	}
+}
+
+void gr_nextMode(void) {
+	gr_status.mode++;
+	stm32_transmitSystemStatus();
+}
+
 int main() {
 
 	while(GR_JMP_INACT_VAL); //Если поставили джампер неактивности, то ничего не делаем
@@ -70,6 +115,9 @@ int main() {
 
 	while(1) { //Главный бесконечный цикл
 		uint32_t cycleStartTime = rscs_time_get();
+
+		radio_checkForCommads();
+
 		{ //fast part
 
 			sens_update_fast();
@@ -92,7 +140,7 @@ int main() {
 					else if(_luminosity_lastdata[i] > gr_luminosity_threshhold) meas_passed++;
 				}
 
-				if(meas_passed > (meas_valid * 2)) gr_status.mode++;
+				if(meas_passed > (meas_valid * 2)) gr_nextMode();
 			}
 
 			printf("TICK: %ld\n", tick_counter);
@@ -115,8 +163,10 @@ int main() {
 					}
 				}
 
-				if(meas_passed >= 2) gr_status.mode++;
+				if(meas_passed >= 2) gr_nextMode();
 			}
+
+			if(gr_status_stm.adxl_status == ADXL_STATUS_FINISHED) gr_nextMode();
 
 			printf("RAW ADC: %ld  %ld  %ld\n", telemetry_so_slow.temperature_soil[0], telemetry_so_slow.temperature_soil[1], telemetry_so_slow.temperature_soil[2]);
 			printf("THERMISTORS: %lf  %lf  %lf\n", _thermistors_recalc(telemetry_so_slow.temperature_soil[0]),
@@ -165,9 +215,9 @@ static void init() {
 #ifdef RSCS_DEBUG
 	{ //UART для дебага
 		uart_debug = rscs_uart_init(GR_UART_DEBUG_ID, 	RSCS_UART_FLAG_ENABLE_RX
-														//|RSCS_UART_FLAG_BUFFER_RX
-														|RSCS_UART_FLAG_ENABLE_TX
-														/*|RSCS_UART_FLAG_BUFFER_TX*/);
+														|RSCS_UART_FLAG_BUFFER_RX
+														|RSCS_UART_FLAG_BUFFER_TX
+														|RSCS_UART_FLAG_ENABLE_TX);
 		rscs_uart_set_baudrate(uart_debug, 9600);
 		rscs_uart_set_character_size(uart_debug, 8);
 		rscs_uart_set_parity(uart_debug, RSCS_UART_PARITY_NONE);

@@ -10,6 +10,7 @@
 #include "diag/Trace.h"
 
 #include "adxl375.h"
+#include "adxl_buffer.h"
 #include "spiwork.h"
 #include "gps_nmea.h"
 
@@ -38,6 +39,7 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
+#include <semphr.h>
 
 #include "led.h"
 
@@ -61,20 +63,21 @@ int main(int argc, char* argv[]) {
 
 	// Infinite loop
 
-	xTaskCreate(dummy_task, "task", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, NULL);
+	//xTaskCreate(dummy_task, "task", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, NULL);
+
+	selfStatusMutex = xSemaphoreCreateMutex();
+
+	adxl375_init(10000);
+	spiwork_init();
+	gps = rscs_gps_init(USART2);
+
+	__enable_irq();
 
 	vTaskStartScheduler();
 	return 0;
 
-
-	adxl375_init(10000);
-	spiwork_init(adxl_buf);
-
-	gps = rscs_gps_init(USART2);
-	__enable_irq();
 	volatile int i = 798690;
 	while(1) {
-		rscs_gps_read(gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));
 
 		i--;i++;i--;
 		i++;i--;i++;

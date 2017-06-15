@@ -5,14 +5,15 @@
  *      Author: developer
  */
 #include <stdbool.h>
+#include <string.h>
 
 #include "ringbuf.h"
-#include "adxl375.h"
+#include "adxl_buffer.h"
 
 #include "../common/comm_def.h"
 #include "globals.h"
 
-#include <stm32f10x_conf.h>
+#include "stm32f10x_conf.h"
 
 //Индексы для вычитки ускорений из буфера
 static uint32_t _acc_low, _acc_high, _acc_now;
@@ -20,6 +21,9 @@ static uint8_t _acc_params_shift;
 
 //Индекс для передачи
 static uint8_t _transiever_index = 0;
+
+//Копия статуса для отправки
+static gr_status_stm_t _status;
 
 static void _receive();
 static void _transmit();
@@ -130,7 +134,6 @@ void  spiwork_init() {
 	_transmit();
 }
 
-
 static void _receive() {
 	uint16_t data = SPI_I2S_ReceiveData(SPI2);
 	switch(receiver_state) {
@@ -151,6 +154,12 @@ static void _receive() {
 
 		case AMRQ_SELFSTATUS_Tx:
 			transmitter_state = TRANSMITTING_SELFSTATUS;
+			xSemaphoreTakeFromISR(selfStatusMutex, NULL);
+
+			memcpy(&_status, &selfStatus, sizeof(selfStatus));
+
+			xSemaphoreGiveFromISR(selfStatusMutex, NULL);
+
 			break;
 
 		default: break;
@@ -168,7 +177,7 @@ static void _receive() {
 			gr_status_p = gr_status_p_tmp;
 			gr_status_p_tmp = tmp;
 
-			if(gr_status_p->mode == GR_MODE_LANDING) adxl_dointwork = true;
+			adxlbuf_start_listen(gr_status_p);
 
 			_transiever_index = 0;
 			receiver_state = RECEIVER_IDLE;
@@ -209,7 +218,7 @@ static void _transmit() {
 
 	case TRANSMITTING_ACC:
 
-		data = rscs_ringbuf_see_from_tail(adxl_buf, _acc_now);
+		data = rscs_ringbuf_varsize_see_from_tail(&adxl_buf, _acc_now);
 		_acc_now++;
 
 		if(_acc_now == (_acc_high + 6)) {
@@ -228,6 +237,7 @@ static void _transmit() {
 		if(_transiever_index == sizeof(selfStatus)){
 			_transiever_index = 0;
 			transmitter_state = TRANSMITTER_IDLE;
+			xSemaphoreGive(selfStatusMutex);
 		}
 		break;
 
