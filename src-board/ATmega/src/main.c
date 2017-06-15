@@ -131,6 +131,10 @@ int main() {
 				_luminosity_lasterrors[0] = telemetry_fast.tsl2561_A_error;
 				_luminosity_lasterrors[1] = telemetry_fast.tsl2561_B_error;
 				_luminosity_lasterrors[2] = telemetry_fast.tsl2561_C_error;
+				// NOTE: Почему у этих буферов разные головы? Один идет с 0-ого элемента, второй с последнего...
+				// В этом контексте очень странно выглядит следующий цикл
+				// так как там потенциально проверяются значения, которые были получены с кодом ошибки
+				// а значит не могут считаться валидными и хоть как-то учавствовать в принятии решения
 
 				int meas_valid = 9, meas_passed = 0;
 
