@@ -38,4 +38,4 @@ extern gr_status_stm_t gr_status_stm;
 extern gr_status_t gr_status;
 
 //Порог освещённости для опознания выхода из ракеты (в люксах)
-extern unsigned int gr_luminosity_threshhold;
+extern uint8_t gr_luminosity_threshhold;

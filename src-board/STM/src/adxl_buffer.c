@@ -7,7 +7,7 @@
 
 //adxlbuf_status status;
 
-//static rscs_ringbuf_varsize_t * ringbuf;
+rscs_ringbuf_varsize_t * adxl_buf;
 
 int16_t x, y, z;
 float x_g, y_g, z_g;
@@ -16,14 +16,14 @@ int k = 0;
 
 static const accelerations_t * _read_from_head(size_t offset)
 {
-	void * elemInBufferVoid = rscs_ringbuf_varsize_see_from_head(ringbuf, offset);
+	void * elemInBufferVoid = rscs_ringbuf_varsize_see_from_head(adxl_buf, offset);
 	return (accelerations_t*)elemInBufferVoid;
 }
 
 // Инициализация модуля
 void adxlbuf_init()
 {
-	ringbuf = rscs_ringbuf_varsize_init(BUF_SIZE, ELEMENT_SIZE);
+	adxl_buf = rscs_ringbuf_varsize_init(BUF_SIZE, ELEMENT_SIZE);
 	status = STATUS_SIMPLE_READ;
 }
 
@@ -40,9 +40,9 @@ void adxlbuf_readcurrent(accelerations_t * datapointptr)
 }
 
 // Переход в активный режим
-void adxlbuf_start_listen(gr_status_t systemstatus)
+void adxlbuf_start_listen(gr_status_t * systemstatus)
 {
-	if (systemstatus.mode == GR_MODE_LANDING)
+	if (systemstatus->mode == GR_MODE_LANDING)
 		status = STATUS_ACTIVE;
 }
 
@@ -52,7 +52,7 @@ void adxlbuf_waits_lock(accelerations_t current_data)
 {
 	float x_g, y_g, z_g, acc;
 
-	rscs_ringbuf_varsize_push(ringbuf, &current_data);
+	rscs_ringbuf_varsize_push(adxl_buf, &current_data);
 
 	x_g = (current_data.x)/2049.18033f;
 	y_g = (current_data.y)/2049.18033f;
@@ -71,7 +71,7 @@ void adxlbuf_push(accelerations_t current_data, float *acc)
 	if (status == STATUS_LOCKED)
 		return;
 
-	rscs_ringbuf_varsize_push(ringbuf, &current_data);
+	rscs_ringbuf_varsize_push(adxl_buf, &current_data);
 
 	if (status == STATUS_SIMPLE_READ)
 		return;

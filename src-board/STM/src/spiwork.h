@@ -10,7 +10,7 @@
 
 #include "ringbuf.h"
 
-void  spiwork_init(rscs_ringbuf_t * buf);
+void  spiwork_init();
 
 
 #endif /* SPIWORK_H_ */

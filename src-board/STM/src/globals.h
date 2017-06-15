@@ -8,6 +8,9 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
+#include <FreeRTOS.h>
+#include <semphr.h>
+
 #include "gps_nmea.h"
 
 #include "comm_def.h"
@@ -21,6 +24,8 @@ extern gr_status_t gr_status0, gr_status1;
 
 //Статус СТМки
 extern gr_status_stm_t selfStatus;
+//И мьютекс для него
+extern xSemaphoreHandle selfStatusMutex;
 
 //Дескриптор GPS
 extern rscs_gps_t * gps;

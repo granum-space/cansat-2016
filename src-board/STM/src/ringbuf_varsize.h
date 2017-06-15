@@ -5,8 +5,8 @@
  *      Author: developer
  */
 
-#ifndef RINGBUF_H_
-#define RINGBUF_H_
+#ifndef RINGBUF_VARSIZE_H_
+#define RINGBUF_VARSIZE_H_
 
 #include "stdlib.h"
 #include "stdint.h"

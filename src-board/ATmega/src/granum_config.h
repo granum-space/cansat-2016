@@ -83,4 +83,10 @@
 //Порого срабатывания для стержней (Ом)
 #define GR_SOILRES_THRESHOLD 100
 
+//Настройки DHT22
+#define RG_DHT22_PORTREG PORTC
+#define RG_DHT22_PINREG PINC
+#define RG_DHT22_DDRREG DDRC
+#define RG_DHT22_PINNUMBER 1
+
 #endif /* GRANUM_CONFIG_H_ */

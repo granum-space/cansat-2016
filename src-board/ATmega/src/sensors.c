@@ -55,7 +55,7 @@ void sens_init() {
 		rscs_ds18b20_start_conversion(ds18b20);
 	}
 
-	dht22 = rscs_dht22_init(&PORTC, &PINC, &DDRC, 1, 7.0f); //DHT22
+	dht22 = rscs_dht22_init(&RG_DHT22_PORTREG, &RG_DHT22_PINREG, &RG_DHT22_DDRREG, RG_DHT22_PINNUMBER, 7.0f); //DHT22
 
 	dump_init("granum"); //FatFS and SDcard
 
@@ -107,14 +107,14 @@ void sens_update_slow() {
 								&(telemetry_slow.pressure), &(telemetry_slow.temperature_bmp));
 	}
 
-	/*{//STM32
+	{//STM32
 		stm32_updateSTMStatus();
 
 		telemetry_slow.latitude = gr_status_stm.lat;
 		telemetry_slow.longtitude = gr_status_stm.lon;
 		telemetry_slow.altitude = gr_status_stm.alt;
 		telemetry_slow.gps_hasFix = gr_status_stm.hasFix;
-	}*/
+	}
 
 	{//Soilresist
 		printf("SOILRES ERROR: %d\n", rscs_get_soil_res(telemetry_slow.soilresist_data, 15));
@@ -147,12 +147,12 @@ void sens_update_so_slow() {
 
 	{//Thermistors
 
-		/*switch(tick_counter % (GR_TICK_SO_SLOW_PRESCALER * 3) ) {
+		switch(tick_counter % (GR_TICK_SO_SLOW_PRESCALER * 3) ) {
 
-		case 0:*/
+		case 0:
 			telemetry_so_slow.thermistor_A_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[0]));
-			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_1);
-			/*break;
+			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_2);
+			break;
 
 		case GR_TICK_SO_SLOW_PRESCALER:
 			telemetry_so_slow.thermistor_B_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[1]));
@@ -163,7 +163,7 @@ void sens_update_so_slow() {
 			telemetry_so_slow.thermistor_C_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[2]));
 			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_1);
 			break;
-		}*/
+		}
 
 	}
 }

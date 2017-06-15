@@ -28,7 +28,7 @@ typedef enum {
 } adxlbuf_status;
 
 adxlbuf_status status;
-rscs_ringbuf_varsize_t * ringbuf;
+extern rscs_ringbuf_varsize_t * adxl_buf;
 
 // Инициализация модуля
 void adxlbuf_init(void);
@@ -44,7 +44,7 @@ void adxlbuf_waits_lock(accelerations_t current_data);
 void adxlbuf_readcurrent(accelerations_t * datapointptr);
 
 // Переход в активный режим
-void adxlbuf_start_listen(gr_status_t systemstatus);
+void adxlbuf_start_listen(gr_status_t * systemstatus);
 
 // Сброс модуля в исходное состояние
 void adxlbuf_reset();
