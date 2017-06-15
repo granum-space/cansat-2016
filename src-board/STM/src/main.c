@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
 	vTaskStartScheduler();
 	return 0;
 
+	// NOTE: Удалить мусор
 	volatile int i = 798690;
 	while(1) {
 

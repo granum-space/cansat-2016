@@ -216,7 +216,7 @@ static void hw_init()
 	portInit.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7; //MOSI, SCLK
 	GPIO_Init(GPIOA, &portInit);
 
-	portInit.GPIO_Pin = GPIO_Pin_6, GPIO_Pin_3;// MISO, INT
+	portInit.GPIO_Pin = GPIO_Pin_6, GPIO_Pin_3;// MISO, INT // NOTE: ./src/adxl375.c:219:32: warning: right-hand operand of comma expression has no effect [-Wunused-value]
 	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &portInit);
 
@@ -240,7 +240,7 @@ static void hw_init()
 
 	nvic.NVIC_IRQChannel = EXTI9_5_IRQn;
 	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = 15; //FIXME настроить приоритет прерываний
+	nvic.NVIC_IRQChannelPreemptionPriority = 15; //FIXME настроить приоритет прерываний // NOTE: Таки настроить, или забить нафиг и удалить этот код
 	nvic.NVIC_IRQChannelSubPriority = 0;
 	NVIC_Init(&nvic);
 }

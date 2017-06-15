@@ -87,7 +87,7 @@ void  spiwork_init() {
 	portInit.GPIO_Pin = GPIO_Pin_14; //MISO
 	GPIO_Init(GPIOB, &portInit);
 
-	portInit.GPIO_Pin = GPIO_Pin_15, GPIO_Pin_13, GPIO_Pin_12;// MOSI, SCLK, CS
+	portInit.GPIO_Pin = GPIO_Pin_15, GPIO_Pin_13, GPIO_Pin_12;// MOSI, SCLK, CS // NOTE: ../src/spiwork.c:90:33: warning: right-hand operand of comma expression has no effect [-Wunused-value]
 	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOB, &portInit);
 

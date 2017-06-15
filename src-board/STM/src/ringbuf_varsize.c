@@ -107,7 +107,7 @@ void * rscs_ringbuf_varsize_see_from_tail(rscs_ringbuf_varsize_t * buf, size_t s
 	if((shift * buf->element_size) >= buf->size) return NULL;
 
 	int i = buf->tail + (shift * buf->element_size);
-	if(i >= buf->fullsize) i -= buf->fullsize;
+	if(i >= buf->fullsize) i -= buf->fullsize; // NOTE: ./src/ringbuf_varsize.c:110:7: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
 
 	return buf->buffer + i;
 }

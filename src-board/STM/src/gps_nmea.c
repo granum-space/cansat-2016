@@ -151,6 +151,7 @@ again:
 		}
 		else
 			return -1;
+			/* no break */
 
 		// брейк опущен сознательно
 	case GPS_STATE_ACCUMULATE:
