@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
 	adxl375_init(10000);
 	spiwork_init();
-	gps = rscs_gps_init(USART2);
+	gr_gps = rscs_gps_init(USART2);
 
 	xTaskCreate(gps_task, "GPS", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES - 1, NULL);
 	xTaskCreate(adxl_task, "ADXL", configMINIMAL_STACK_SIZE, NULL, 0, NULL);

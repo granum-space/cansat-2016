@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "stdint.h"
 
+#pragma pack(push, 1)
+
 //Вспомогательный тип для хранения ускорений
 typedef struct {
 	int16_t x, y, z;
@@ -114,5 +116,7 @@ typedef struct {
 #define AMRQ_STATUS_Rx 		0xAA
 #define AMRQ_SELFSTATUS_Tx	0xBB
 #define AMRQ_ACC_DATA		0xCC
+
+#pragma pack(pop)
 
 #endif //COMM_DEF_H_

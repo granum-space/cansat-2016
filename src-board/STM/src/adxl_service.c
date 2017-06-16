@@ -29,7 +29,7 @@ void adxl_task(void * args) {
 
 		adxl375_read( &(accelerations.x), &(accelerations.y), &(accelerations.z));
 
-		adxlbuf_push(accelerations, &acc);
+		adxlbuf_update();
 
 		vTaskDelayUntil(&lastWakeup, 1 / portTICK_RATE_MS);
 	}

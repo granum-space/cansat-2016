@@ -28,7 +28,7 @@ extern gr_status_stm_t selfStatus;
 extern xSemaphoreHandle selfStatusMutex;
 
 //Дескриптор GPS
-extern rscs_gps_t * gps;
+extern rscs_gps_t * gr_gps;
 
 
 #endif /* GLOBALS_H_ */

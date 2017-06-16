@@ -10,11 +10,6 @@
 
 #include <stddef.h>
 
-#pragma GCC diagnostic push // очень много варнингов на эту тему от фриртоса и fatfs
-#pragma GCC diagnostic ignored "-Wpadded"
-#include <ff.h>
-#pragma GCC diagnostic pop
-
 #include "librscs_config.h"
 #include "granum_config.h"
 #include "granum_globals.h"

@@ -82,7 +82,7 @@ static int readByte(void);
 int adxl375_getRegisterValue(uint8_t registerAddress, uint8_t * read_data);
 int adxl375_setRegisterValue(uint8_t registerAddress, uint8_t registerValue);
 
-adxl375_e_t adxl375_init(size_t bufsize) {
+adxl375_e_t adxl375_init() {
 
 	hw_init();
 
@@ -216,33 +216,13 @@ static void hw_init()
 	portInit.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7; //MOSI, SCLK
 	GPIO_Init(GPIOA, &portInit);
 
-	portInit.GPIO_Pin = GPIO_Pin_6, GPIO_Pin_3;// MISO, INT
+	portInit.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_3;// MISO, INT
 	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &portInit);
 
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 	SPI_Cmd(ADXL_SPI, ENABLE);
 	SPI_NSSInternalSoftwareConfig(ADXL_SPI, SPI_NSSInternalSoft_Set); //ВНнутренний CS для модуля
-
-	EXTI_InitTypeDef exti;
-	NVIC_InitTypeDef nvic;
-
-	EXTI_StructInit(&exti);
-
-	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource3);
-
-	exti.EXTI_Line = EXTI_Line3;
-	exti.EXTI_LineCmd = ENABLE;
-	exti.EXTI_Mode = EXTI_Mode_Interrupt;
-	exti.EXTI_Trigger = EXTI_Trigger_Rising;
-
-	EXTI_Init(&exti);
-
-	nvic.NVIC_IRQChannel = EXTI9_5_IRQn;
-	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = 15; //FIXME настроить приоритет прерываний
-	nvic.NVIC_IRQChannelSubPriority = 0;
-	NVIC_Init(&nvic);
 }
 
 

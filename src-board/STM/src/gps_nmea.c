@@ -19,6 +19,8 @@ typedef enum
 	GPS_STATE_ACCUMULATE,	// накапливаем символы
 } state_t;
 
+
+#pragma pack(push, 1)
 struct rscs_gps_t
 {
 	USART_TypeDef * uart;
@@ -26,6 +28,7 @@ struct rscs_gps_t
 	char buffer[100];
 	size_t buffer_carret;
 };
+#pragma pack(pop)
 
 rscs_ringbuf_t * gps_buf;
 
@@ -99,14 +102,17 @@ void rscs_gps_deinit(rscs_gps_t * gps)
 static bool _handle_message(const char * msg_signed, float * lon, float * lat,
 						    float * height, bool * hasFix)
 {
-	printf("HandleMessage\n");
-
 	struct minmea_sentence_gga frame;
 	if( !minmea_parse_gga(&frame, msg_signed)) return false;
+
+	xSemaphoreTake(selfStatusMutex, 0); //TODO для красоты можно передавать хендл мьютекса параметром
+
 	*lon = minmea_tofloat(&frame.longitude);
 	*lat = minmea_tofloat(&frame.latitude);
 	*height = minmea_tofloat(&frame.altitude);
 	*hasFix = frame.fix_quality != 0;
+
+	xSemaphoreGive(selfStatusMutex);
 
 	return 1;
 }
@@ -203,10 +209,5 @@ again:
 
 void gps_task(void * args) {
 	(void) args;
-
-	xSemaphoreTake(selfStatusMutex, 0);
-
-	rscs_gps_read(gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));
-
-	xSemaphoreGive(selfStatusMutex);
+	rscs_gps_read(gr_gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));
 }
