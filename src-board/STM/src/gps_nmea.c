@@ -210,5 +210,8 @@ again:
 
 void gps_task(void * args) {
 	(void) args;
+
+	// NOTE: што? а где while(1) и все такое
+	// а где мьютексы?
 	rscs_gps_read(gr_gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));
 }

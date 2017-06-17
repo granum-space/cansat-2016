@@ -8,6 +8,8 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+
+// NOTE: Снова мусор
 #define ADXL_WATERMARK_VAL 20
 
 #define RINGBUF_SIZE 10000

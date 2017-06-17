@@ -16,13 +16,16 @@
 
 static TickType_t lastWakeup;
 
+// NOTE: все это не используется
 static accelerations_t accelerations;
-static float acc;
 
 void adxl_task(void * args) {
 	(void) args;
 
 	lastWakeup = xTaskGetTickCount();
+
+	// NOTE: Перенести adxl375_init сюда (снова принцип какой-то там ответственности)
+	// и проверять ошибку. Если не зашло - мигать лампочкой как псих
 
 	while(1) {
 		if(adxlbuf_is_triggered()) vTaskDelete(NULL);
@@ -32,6 +35,7 @@ void adxl_task(void * args) {
 		adxlbuf_update();
 
 		vTaskDelayUntil(&lastWakeup, 1 / portTICK_RATE_MS);
+		// NOTE: Срочно нужны тесты. Редко хватает точности ртосовых delay-ев
 	}
 
 }

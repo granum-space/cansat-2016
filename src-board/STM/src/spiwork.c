@@ -50,7 +50,8 @@ void EXTI15_10_IRQHandler() { //CS change handling
 	//Если CS поднялся, то идём в IDLE
 	if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12)) receiver_state = RECEIVER_IDLE;
 	//Иначе ждём запроса от атмеги
-	else receiver_state = RECEIVER_AMRQ;
+	else receiver_state = RECEIVER_AMRQ; // NOTE: Внимательно тут с гоночной ситуацией
+										 // Это прерывание стреляет когда захочет
 	//Сбрасываем флаг прерывания
 	EXTI_ClearITPendingBit(EXTI_Line12);
 }

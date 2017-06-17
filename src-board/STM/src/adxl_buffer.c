@@ -54,6 +54,8 @@ bool adxlbuf_is_triggered(void)
 // Чтение последнего элемента из буфера накопленных
 void adxlbuf_readcurrent(accelerations_t * datapointptr)
 {
+	// NOTE: Указатель то ты вернешь, но что будет с тем, на что он указывает?
+	// Нужно копировать данные из буфера здесь и сейчас :c
 	xSemaphoreTake(_adxl_buf_mutex, 0);
 	*datapointptr = *_read_from_head(0);
 	xSemaphoreGive(_adxl_buf_mutex);
@@ -69,13 +71,6 @@ void adxlbuf_start_listen(gr_status_t * systemstatus)
 	}
 }
 
-/* Модуль начинает анализировать накапливаемые данные и может
- * войти в состояние блокировки по удару о Землю (в идеале) */
-void _waits_lock(float acc)
-{
-	if (acc < 1) k++;
-	if (k > 10) status = STATUS_LOCKED;
-}
 
 // Добавления нового измерения в накапливаемый маcсив
 void adxlbuf_update(void)
@@ -83,7 +78,6 @@ void adxlbuf_update(void)
 	float x_g, y_g, z_g;
 	accelerations_t accelerations;
 
-	bool j = true;
 	if (status == STATUS_LOCKED)
 		return;
 
@@ -97,17 +91,21 @@ void adxlbuf_update(void)
 
 	float acc = sqrt(x_g*x_g + y_g*y_g + z_g*z_g);
 
-	if (acc < 3.0) j = false;
-		else j = true; // j = false, значит удара не было
-
-	if (j) status = STATUS_WAIT_LOCK; // если был удар, то переключаем статус
+	if (acc >= 3.0) // NOTE: тут чет была жесть на условиях. Переисал
+	{
+		// Если был удар
+		 status = STATUS_WAIT_LOCK; // если был удар, то переключаем статус
+		 k = 0;
+	}
 
 	if (status != STATUS_WAIT_LOCK)
 		return;
 
-	_waits_lock(acc);
+	if (acc < 1) k++;
+	if (k > 10) status = STATUS_LOCKED;
 
-	xSemaphoreGive(_adxl_buf_mutex);
+	xSemaphoreGive(_adxl_buf_mutex); // NOTE: долго держим, нужно бы переосмылить это место
+									 // NOTE: А еще между xSemaphoreTake и xSemaphoreGive кучу кондиционных return;
 }
 
 // Сброс модуля в исходное состояние
@@ -122,5 +120,7 @@ void adxlbuf_reset()
 void * adxlbuf_see_from_tail(size_t shift) {
 	xSemaphoreTake(_adxl_buf_mutex, 0);
 	return rscs_ringbuf_varsize_see_from_tail(adxl_buf, shift);
+	// NOTE: Снова - а как быть с тем, что по указателю, когда мьютекс отпустит?
+	// нужно вынимать весь блок целиком
 	xSemaphoreGive(_adxl_buf_mutex);
 }
