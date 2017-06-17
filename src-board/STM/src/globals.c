@@ -19,4 +19,4 @@ gr_status_stm_t selfStatus = {
 xSemaphoreHandle selfStatusMutex;
 
 //Дескриптор GPS
-rscs_gps_t * gps;
+rscs_gps_t * gr_gps;

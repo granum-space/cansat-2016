@@ -4,6 +4,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#pragma GCC diagnostic push // очень много варнингов на эту тему от фриртоса и fatfs
+#pragma GCC diagnostic ignored "-Wpadded"
+#include <ff.h>
+#pragma GCC diagnostic pop
+
 #include "rscs/uart.h"
 
 #define OPERATION(OP) if(OP != RSCS_E_NONE) return;

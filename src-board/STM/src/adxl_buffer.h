@@ -20,25 +20,11 @@
 #include "adxl375.h"
 #include "comm_def.h"
 
-typedef enum {
-	STATUS_SIMPLE_READ,		//!< Читаем ускорения, но не анализируем их
-	STATUS_ACTIVE,			//!< Читаем ускорения, анализируем их и принимаем решение о посадке
-	STATUS_WAIT_LOCK,		//!< Мы уже почувствовали удар о Землю и сейчас накапливаем данные о нем
-	STATUS_LOCKED			//!< Процесс входа в Землю закончился, не принимаем новые данные
-} adxlbuf_status;
-
-adxlbuf_status status;
-extern rscs_ringbuf_varsize_t * adxl_buf;
-
 // Инициализация модуля
 void adxlbuf_init(void);
 
 // Добавления нового измерения в накапливаемый маcсив
-void adxlbuf_push(accelerations_t current_data, float *acc);
-
-/* Модуль начинает анализировать накапливаемые данные и может
- * войти в состояние блокировки по удару о Землю (в идеале) */
-void adxlbuf_waits_lock(accelerations_t current_data);
+void adxlbuf_update(void);
 
 // Чтение последнего элемента из буфера накопленных
 void adxlbuf_readcurrent(accelerations_t * datapointptr);
@@ -47,13 +33,13 @@ void adxlbuf_readcurrent(accelerations_t * datapointptr);
 void adxlbuf_start_listen(gr_status_t * systemstatus);
 
 // Сброс модуля в исходное состояние
-void adxlbuf_reset();
+void adxlbuf_reset(void);
 
 // Проверка - было ли обнаружено событие удара и был ли заблокирован буфер
 bool adxlbuf_is_triggered(void);
 
-
-
+// Надстройка над ringbuf_varsize_see_from_tail()
+void * adxlbuf_see_from_tail(size_t shift);
 
 
 

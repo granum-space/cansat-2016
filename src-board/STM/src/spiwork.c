@@ -87,7 +87,7 @@ void  spiwork_init() {
 	portInit.GPIO_Pin = GPIO_Pin_14; //MISO
 	GPIO_Init(GPIOB, &portInit);
 
-	portInit.GPIO_Pin = GPIO_Pin_15, GPIO_Pin_13, GPIO_Pin_12;// MOSI, SCLK, CS // NOTE: ../src/spiwork.c:90:33: warning: right-hand operand of comma expression has no effect [-Wunused-value]
+	portInit.GPIO_Pin = GPIO_Pin_15 | GPIO_Pin_13 | GPIO_Pin_12;// MOSI, SCLK, CS
 	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOB, &portInit);
 
@@ -130,7 +130,7 @@ void  spiwork_init() {
 	SPI_Cmd(SPI2, ENABLE);
 
 	//Прокачиваем первый обмен
-	_receive();
+	SPI_I2S_ReceiveData(SPI2);
 	_transmit();
 }
 
@@ -170,7 +170,7 @@ static void _receive() {
 		break;
 
 	case RECEIVEING_STATUS:
-		*( ( (uint8_t *) gr_status_p_tmp) + _transiever_index ) = data & 0xFF;
+		*( ( (uint8_t *) gr_status_p_tmp) + _transiever_index ) = (uint8_t)data & 0xFF;
 		_transiever_index++;
 
 		if(_transiever_index == sizeof(gr_status_t) ) {
@@ -188,16 +188,16 @@ static void _receive() {
 
 	case RECEIVEING_ACC_PARAMS:
 		if(_acc_params_shift < 32) {
-			_acc_low |= (data << _acc_params_shift);
+			_acc_low |= (uint32_t) (data << _acc_params_shift);
 		}
 
 		else {
 			if(_acc_params_shift < 64) {
-				_acc_high |= (data << (_acc_params_shift - 32));
+				_acc_high |= (uint32_t) (data << (_acc_params_shift - 32));
 			}
 		}
 
-		_acc_params_shift += 8;
+		_acc_params_shift += (uint8_t) 8;
 
 		if (_acc_params_shift == 64){
 			_acc_now = _acc_low;
@@ -220,7 +220,7 @@ static void _transmit() {
 	switch(transmitter_state) {
 
 	case TRANSMITTING_ACC:
-		acceleration = rscs_ringbuf_varsize_see_from_tail(adxl_buf, _acc_now);
+		acceleration = adxlbuf_see_from_tail(_acc_now);
 
 		data = ((uint8_t *) acceleration) [_transiever_index];
 		_transiever_index++;
@@ -230,7 +230,7 @@ static void _transmit() {
 			_acc_now++;
 		}
 
-		if(_acc_now == (_acc_high + 6)) {
+		if(_acc_now == (_acc_high + 1)) {
 			_transiever_index = 0;
 			transmitter_state = TRANSMITTER_IDLE;
 		}
@@ -238,13 +238,12 @@ static void _transmit() {
 		break;
 
 	case TRANSMITTING_SELFSTATUS:
-		data = *( ((uint8_t *) &_status ) + _transiever_index);
+		data = ((uint8_t *) &_status ) [_transiever_index];
 		_transiever_index++;
 
 		if(_transiever_index == sizeof(selfStatus)){
 			_transiever_index = 0;
 			transmitter_state = TRANSMITTER_IDLE;
-			xSemaphoreGive(selfStatusMutex);
 		}
 		break;
 
