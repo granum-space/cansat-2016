@@ -155,7 +155,7 @@ rscs_e rscs_get_soil_res(soilresist_data_t*soilresist_data, uint8_t precision)
 		};
 
 		int16_t parrots_dif1, parrots_dif2, parrots_difX;
-		uint32_t res1 = 0, res2 = 200000, resX;
+		uint32_t res1 = 0, res2 = 200000, resX = 0;
 
 		rscs_digipot_set_res(res1);
 		error = rscs_ads1115_take(adc, RSCS_ADS1115_CHANNEL_DIFF_01, &parrots_dif1);

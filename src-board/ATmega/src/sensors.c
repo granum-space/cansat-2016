@@ -80,11 +80,11 @@ void sens_update_fast() {
 	}
 
 	{//TSL2561
-		telemetry_fast.tsl2561_A_error = rscs_tsl2561_read(tsl2561_A, &(telemetry_fast.luminosity[0].v0), &(telemetry_fast.luminosity[0].v1));
+		telemetry_fast.luminosity[0].error = rscs_tsl2561_read(tsl2561_A, &(telemetry_fast.luminosity[0].v0), &(telemetry_fast.luminosity[0].v1));
 		telemetry_fast.luminosity[0].lux = rscs_tsl2561_get_lux(tsl2561_A, RSCS_TSL2561_GAIN_1X, RSCS_TSL2561_TYPE_CS, RSCS_TSL2561_INT_402MS, telemetry_fast.luminosity[0].v0, telemetry_fast.luminosity[0].v1);
-		telemetry_fast.tsl2561_B_error = rscs_tsl2561_read(tsl2561_B, &(telemetry_fast.luminosity[1].v0), &(telemetry_fast.luminosity[1].v1));
+		telemetry_fast.luminosity[1].error = rscs_tsl2561_read(tsl2561_B, &(telemetry_fast.luminosity[1].v0), &(telemetry_fast.luminosity[1].v1));
 		telemetry_fast.luminosity[1].lux = rscs_tsl2561_get_lux(tsl2561_B, RSCS_TSL2561_GAIN_1X, RSCS_TSL2561_TYPE_CS, RSCS_TSL2561_INT_402MS, telemetry_fast.luminosity[1].v0, telemetry_fast.luminosity[1].v1);
-		telemetry_fast.tsl2561_C_error = rscs_tsl2561_read(tsl2561_C, &(telemetry_fast.luminosity[2].v0), &(telemetry_fast.luminosity[2].v1));
+		telemetry_fast.luminosity[2].error = rscs_tsl2561_read(tsl2561_C, &(telemetry_fast.luminosity[2].v0), &(telemetry_fast.luminosity[2].v1));
 		telemetry_fast.luminosity[2].lux = rscs_tsl2561_get_lux(tsl2561_C, RSCS_TSL2561_GAIN_1X, RSCS_TSL2561_TYPE_CS, RSCS_TSL2561_INT_402MS, telemetry_fast.luminosity[2].v0, telemetry_fast.luminosity[2].v1);
 	}
 
@@ -135,7 +135,6 @@ static uint32_t lastDHTupdate = 0;
 void sens_update_so_slow() {
 
 	if(rscs_ds18b20_check_ready()) {//DS18B20
-		printf("DS18B20: NARMALNA!\n");
 		telemetry_so_slow.ds18b20_error_read = rscs_ds18b20_read_temperature(ds18b20, &(telemetry_so_slow.temperature_ds18));
 		telemetry_so_slow.ds18b20_error_conversion = rscs_ds18b20_start_conversion(ds18b20);
 	}
@@ -147,24 +146,18 @@ void sens_update_so_slow() {
 
 	{//Thermistors
 
-		switch(tick_counter % (GR_TICK_SO_SLOW_PRESCALER * 3) ) {
+		rscs_adc_wait_result();
+		telemetry_so_slow.thermistor_A_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[0]));
 
-		case 0:
-			telemetry_so_slow.thermistor_A_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[0]));
-			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_2);
-			break;
+		rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_2);
+		rscs_adc_wait_result();
+		telemetry_so_slow.thermistor_B_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[1]));
 
-		case GR_TICK_SO_SLOW_PRESCALER:
-			telemetry_so_slow.thermistor_B_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[1]));
-			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_3);
-			break;
+		rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_3);
+		rscs_adc_wait_result();
+		telemetry_so_slow.thermistor_C_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[2]));
 
-		default:
-			telemetry_so_slow.thermistor_C_error = rscs_adc_get_result(&(telemetry_so_slow.temperature_soil[2]));
-			rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_1);
-			break;
-		}
-
+		rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_1);
 	}
 }
 

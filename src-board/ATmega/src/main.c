@@ -28,8 +28,10 @@
 #include "rscs/stdext/stdio.h"
 
 #include "soil_res.h"
+#include "gr_servo.h"
 
 #include "sensors.h"
+#include "stm32.h"
 
 #include "granum_globals.h"
 #include "granum_config.h"
@@ -37,26 +39,9 @@
 
 static void init();
 
-static unsigned int _luminosity_lastdata[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-static rscs_e _luminosity_lasterrors[] = {-127, -127, -127, -127, -127, -127, -127, -127, -127};
+static luminosity_t _luminosity_lastdata[9];
 
-static double _thermistors_recalc(int16_t adc_data){
-	/*double r1 = 100000.0*(adc_data*5.0/1024.0)/(5.0 - adc_data*5.0/1024.0);
-	double t1 = 1.0/(25.0 + 273.15) + 1.0/3950.0*log(r1/100000.0);
-	return (1.0 / t1) - 273.15;*/
-
-	double r1 = 1023 / adc_data - 1;
-	r1 = 82400.0 / r1;
-
-	 double steinhart;
-	  steinhart = r1 / 100000;     // (R/Ro)
-	  steinhart = log(steinhart);                  // ln(R/Ro)
-	  steinhart /= 3950;                   // 1/B * ln(R/Ro)
-	  steinhart += 1.0 / (25.0 + 273.15); // + (1/To)
-	  steinhart = 1.0 / steinhart;                 // Invert
-	  steinhart -= 273.15;                         // convert to C
-	  return steinhart;
-}
+static soilresist_data_t _soilres_lastdata[9];
 
 static enum {
 	RADIO_STATE_IDLE,
@@ -81,11 +66,13 @@ void radio_checkForCommads(void) {
 				if(radio_index > 9) {
 					radio_index = 0;
 
-					if( *( (uint64_t *)radio_bytes) == GSRQ_CHMOD) {
+					uint64_t * data_p = (uint64_t *)radio_bytes;
+
+					if( *data_p == GSRQ_CHMOD) {
 						if(gr_status.mode == GR_MODE_IDLE) gr_status.mode = GR_MODE_AWAITING_EXIT;
 					}
 
-					else if( *( (uint64_t*)radio_bytes) == GSRQ_CHLUX) {
+					else if( *data_p == GSRQ_CHLUX) {
 						gr_luminosity_threshhold = radio_bytes[8];
 					}
 				}
@@ -101,6 +88,24 @@ void radio_checkForCommads(void) {
 void gr_nextMode(void) {
 	gr_status.mode++;
 	stm32_transmitSystemStatus();
+
+	switch(gr_status.mode) {
+	case GR_MODE_AWAITING_LEGS:
+		GR_FUSE_ON
+		break;
+
+	case GR_MODE_LANDING:
+		GR_FUSE_OFF
+		break;
+
+	case GR_MODE_ONGROUND:
+		gr_servo_set(90);
+		for(int i = 0; i < 3; i++) stm32_getAccelerations();
+		break;
+
+	default:
+		break;
+	}
 }
 
 int main() {
@@ -124,23 +129,18 @@ int main() {
 
 			if(gr_status.mode == GR_MODE_AWAITING_EXIT) {
 
-				memcpy(_luminosity_lastdata, _luminosity_lastdata + 3, 6 * sizeof(unsigned int));
-				memcpy(_luminosity_lastdata + 6, telemetry_fast.luminosity, 3 * sizeof(unsigned int));
-
-				memcpy(_luminosity_lasterrors + 3, _luminosity_lasterrors, 6);
-				_luminosity_lasterrors[0] = telemetry_fast.tsl2561_A_error;
-				_luminosity_lasterrors[1] = telemetry_fast.tsl2561_B_error;
-				_luminosity_lasterrors[2] = telemetry_fast.tsl2561_C_error;
+				memcpy(_luminosity_lastdata, _luminosity_lastdata + 3, 6 * sizeof(luminosity_t));
+				memcpy(_luminosity_lastdata + 6, telemetry_fast.luminosity, 3 * sizeof(luminosity_t));
 
 				int meas_valid = 9, meas_passed = 0;
 
 				for(int i = 0; i < 3 * 3 /*3 измерения с 3 датчиков*/ ; i++) {
-					if(_luminosity_lasterrors[i] != RSCS_E_NONE) meas_valid--;
+					if(_luminosity_lastdata[i].error != RSCS_E_NONE) meas_valid--;
 
-					else if(_luminosity_lastdata[i] > gr_luminosity_threshhold) meas_passed++;
+					else if(_luminosity_lastdata[i].lux > gr_luminosity_threshhold) meas_passed++;
 				}
 
-				if(meas_passed > (meas_valid * 2)) gr_nextMode();
+				if(meas_passed > (meas_valid / 2)) gr_nextMode();
 			}
 
 			printf("TICK: %ld\n", tick_counter);
@@ -157,21 +157,21 @@ int main() {
 
 			int meas_passed = 0;
 			if(gr_status.mode == GR_MODE_AWAITING_LEGS) {
-				for(int i = 0; i < 3; i++) {
-					if(telemetry_slow.soilresist_data[i].resistance > GR_SOILRES_THRESHOLD) {
+				for(int i = 0; i < 9; i++) {
+					memcpy(_soilres_lastdata, _soilres_lastdata + 3, 6 * sizeof(soilresist_data_t));
+					memcpy(_soilres_lastdata + 6, telemetry_fast.luminosity, 3 * sizeof(soilresist_data_t));
+
+					if(_soilres_lastdata[i].resistance > GR_SOILRES_THRESHOLD) {
 						meas_passed++;
 					}
 				}
 
-				if(meas_passed >= 2) gr_nextMode();
+				if(meas_passed > 4) gr_nextMode();
 			}
 
 			if(gr_status_stm.adxl_status == ADXL_STATUS_FINISHED) gr_nextMode();
 
 			printf("RAW ADC: %ld  %ld  %ld\n", telemetry_so_slow.temperature_soil[0], telemetry_so_slow.temperature_soil[1], telemetry_so_slow.temperature_soil[2]);
-			printf("THERMISTORS: %lf  %lf  %lf\n", _thermistors_recalc(telemetry_so_slow.temperature_soil[0]),
-												_thermistors_recalc(telemetry_so_slow.temperature_soil[1]),
-												_thermistors_recalc(telemetry_so_slow.temperature_soil[2]));
 
 			/*printf("SOILRES: %ld   %ld   %ld\n", 	telemetry_slow.soilresist_data[0].resistance,
 												telemetry_slow.soilresist_data[1].resistance,

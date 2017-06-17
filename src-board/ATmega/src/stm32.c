@@ -6,6 +6,8 @@
 
 #include "rscs/spi.h"
 
+#include "dump.h"
+
 void stm32_initExchange() {
 	GR_STM_INIT_CS;
 }

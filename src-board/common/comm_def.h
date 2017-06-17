@@ -16,6 +16,12 @@ typedef struct {
 	uint32_t resistance;
 } soilresist_data_t;
 
+typedef struct {
+	uint16_t v0, v1;
+	unsigned int lux;
+	int8_t error;
+} luminosity_t;
+
 //Телеметрийные пакеты
 typedef struct {
 	uint16_t marker; //Must be 0xACCA
@@ -26,11 +32,7 @@ typedef struct {
 	accelerations_t accelerations;
 	int8_t adxl345_error;
 
-	struct {
-		uint16_t v0, v1;
-		unsigned int lux;
-	} luminosity[3];
-	int8_t tsl2561_A_error, tsl2561_B_error, tsl2561_C_error;
+	luminosity_t luminosity[3];
 
 	uint32_t time;
 
@@ -81,6 +83,8 @@ typedef struct {
 typedef struct {
 	uint16_t marker; //Must be 0xFA7B
 	uint16_t start_i, end_i;
+	uint32_t checksumm;
+
 	accelerations_t data[];
 } gr_telemetry_adxl375_t;
 
@@ -116,6 +120,11 @@ typedef struct {
 #define AMRQ_STATUS_Rx 		0xAA
 #define AMRQ_SELFSTATUS_Tx	0xBB
 #define AMRQ_ACC_DATA		0xCC
+
+//Запросы от наземной станции к атмеге
+#define GSRQ_START 0x72
+#define GSRQ_CHMOD 0x73B750F83246FEAE
+#define GSRQ_CHLUX 0x43EAFDDAF5679FED
 
 #pragma pack(pop)
 

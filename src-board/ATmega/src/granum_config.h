@@ -89,4 +89,14 @@
 #define RG_DHT22_DDRREG DDRC
 #define RG_DHT22_PINNUMBER 1
 
+//Макросы для пережигания
+#define GR_FUSE_INIT DDRC |= (1 << 2);
+#define GR_FUSE_ON PORTC |= (1 << 2);
+#define GR_FUSE_OFF PORTC &= ~(1 << 2);
+
+//Настройки модуля сервы
+#define GR_SERVO_MAX_VALUE 2400
+#define GR_SERVO_MIN_VALUE 650
+#define GR_SERVO_START_VALUE GR_SERVO_MIN_VALUE
+
 #endif /* GRANUM_CONFIG_H_ */
