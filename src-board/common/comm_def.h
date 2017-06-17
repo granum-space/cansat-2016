@@ -4,7 +4,16 @@
 #include <stdbool.h>
 #include "stdint.h"
 
+#ifdef AVR
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#endif
+
 #pragma pack(push, 1)
+
+#ifdef AVR
+#pragma GCC diagnostic pop
+#endif
 
 //Вспомогательный тип для хранения ускорений
 typedef struct {
@@ -126,6 +135,17 @@ typedef struct {
 #define GSRQ_CHMOD 0x73B750F83246FEAE
 #define GSRQ_CHLUX 0x43EAFDDAF5679FED
 
+
+#ifdef AVR
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#endif
+
 #pragma pack(pop)
+
+#ifdef AVR
+#pragma GCC diagnostic pop
+#endif
+
 
 #endif //COMM_DEF_H_

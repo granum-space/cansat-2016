@@ -9,7 +9,7 @@
 #include "stm32.h"
 #include "soil_res.h"
 
-static uint32_t gr_checksumm_calculate(void * data, size_t datasize);
+#include "sensors.h"
 
 void sens_init() {
 

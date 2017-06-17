@@ -5,6 +5,7 @@
 #include "granum_globals.h"
 
 #include "rscs/spi.h"
+#include "sensors.h"
 
 #include "dump.h"
 
