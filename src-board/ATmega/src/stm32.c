@@ -35,7 +35,7 @@ void stm32_transmitSystemStatus() {
 void stm32_getAccelerations() {
 
 	int step = 100;
-	gr_telemetry_adxl375_t * packet = malloc( sizeof(gr_telemetry_adxl375_t) + 100 );
+	gr_telemetry_adxl375_t * packet = malloc( sizeof(gr_telemetry_adxl375_t) + step * sizeof(accelerations_t) );
 	for(uint32_t i = 0; i < GR_STM_ACCBUF_SIZE; i += step + 1) {
 		GR_STM_SELECT
 
@@ -46,6 +46,10 @@ void stm32_getAccelerations() {
 		rscs_spi_read(packet->data, step, 0xFF);
 
 		GR_STM_UNSELECT
+
+		packet->checksumm = 0;
+
+		packet->checksumm = gr_checksumm_calculate(packet, sizeof(gr_telemetry_adxl375_t) + step * sizeof(accelerations_t) );
 
 		dump(packet->data, step);
 	}

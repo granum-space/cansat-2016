@@ -9,7 +9,7 @@
 #include "stm32.h"
 #include "soil_res.h"
 
-static uint32_t _checksumm_calculate(void * data, size_t datasize);
+static uint32_t gr_checksumm_calculate(void * data, size_t datasize);
 
 void sens_init() {
 
@@ -91,7 +91,7 @@ void sens_update_fast() {
 	telemetry_fast.time = rscs_time_get();
 	telemetry_fast.tick = tick_counter;
 
-	telemetry_fast.checksumm = _checksumm_calculate(&telemetry_fast, sizeof(telemetry_fast) - sizeof(telemetry_fast.checksumm));
+	telemetry_fast.checksumm = gr_checksumm_calculate(&telemetry_fast, sizeof(telemetry_fast) - sizeof(telemetry_fast.checksumm));
 
 	dump(&telemetry_fast, sizeof(telemetry_fast));
 
@@ -123,7 +123,7 @@ void sens_update_slow() {
 	telemetry_slow.time = rscs_time_get();
 	telemetry_slow.tick = tick_counter;
 
-	telemetry_slow.checksumm = _checksumm_calculate(&telemetry_slow, sizeof(telemetry_slow) - sizeof(telemetry_slow.checksumm));
+	telemetry_slow.checksumm = gr_checksumm_calculate(&telemetry_slow, sizeof(telemetry_slow) - sizeof(telemetry_slow.checksumm));
 
 	dump(&telemetry_slow, sizeof(telemetry_slow));
 
@@ -161,7 +161,7 @@ void sens_update_so_slow() {
 	}
 }
 
-static uint32_t _checksumm_calculate(void * data, size_t datasize) {
+uint32_t gr_checksumm_calculate(void * data, size_t datasize) {
 	uint32_t result = 0;
 
 	for(int i = 0; i < datasize; i++) {

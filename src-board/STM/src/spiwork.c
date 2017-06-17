@@ -230,7 +230,7 @@ static void _transmit() {
 			_acc_now++;
 		}
 
-		if(_acc_now == (_acc_high + 6)) {
+		if(_acc_now == (_acc_high + 1)) {
 			_transiever_index = 0;
 			transmitter_state = TRANSMITTER_IDLE;
 		}
@@ -238,13 +238,12 @@ static void _transmit() {
 		break;
 
 	case TRANSMITTING_SELFSTATUS:
-		data = *( ((uint8_t *) &_status ) + _transiever_index);
+		data = ((uint8_t *) &_status ) [_transiever_index];
 		_transiever_index++;
 
 		if(_transiever_index == sizeof(selfStatus)){
 			_transiever_index = 0;
 			transmitter_state = TRANSMITTER_IDLE;
-			xSemaphoreGive(selfStatusMutex);
 		}
 		break;
 
