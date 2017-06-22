@@ -34,11 +34,9 @@ void stm32_transmitSystemStatus() {
 }
 
 void stm32_getAccelerations() {
-	// NOTE: ? Что тут вообще происходит? Нужен отдельный конечный автомат, который будет сбрасывать эти данные отдельным пакетом
-	// с метаданными (номер попытки сброса всего буфера, отступ и размеры текущего блока)
 	int step = 100;
 	gr_telemetry_adxl375_t * packet = malloc( sizeof(gr_telemetry_adxl375_t) + step * sizeof(accelerations_t) );
-	for(uint32_t i = 0; i < GR_STM_ACCBUF_SIZE; i += step + 1) {
+	for(uint32_t i = 0; i <= GR_STM_ACCBUF_SIZE; i += step + 1) {
 		GR_STM_SELECT
 
 		rscs_spi_do(AMRQ_ACC_DATA);
@@ -48,6 +46,9 @@ void stm32_getAccelerations() {
 		rscs_spi_read(packet->data, step, 0xFF);
 
 		GR_STM_UNSELECT
+
+		packet->start_i = i;
+		packet->end_i = i + step;
 
 		packet->checksumm = 0;
 

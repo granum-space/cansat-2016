@@ -54,8 +54,6 @@ bool adxlbuf_is_triggered(void)
 // Чтение последнего элемента из буфера накопленных
 void adxlbuf_readcurrent(accelerations_t * datapointptr)
 {
-	// NOTE: Указатель то ты вернешь, но что будет с тем, на что он указывает?
-	// Нужно копировать данные из буфера здесь и сейчас :c
 	xSemaphoreTake(_adxl_buf_mutex, 0);
 	*datapointptr = *_read_from_head(0);
 	xSemaphoreGive(_adxl_buf_mutex);
@@ -79,7 +77,7 @@ void adxlbuf_update(void)
 	accelerations_t accelerations;
 
 	if (status == STATUS_LOCKED)
-		return;
+		goto end;
 
 	adxl375_GetGXYZ(&accelerations.x, &accelerations.y, &accelerations.z, &x_g, &y_g, &z_g);
 
@@ -87,7 +85,7 @@ void adxlbuf_update(void)
 	rscs_ringbuf_varsize_push(adxl_buf, &accelerations);
 
 	if (status == STATUS_SIMPLE_READ)
-		return;
+		goto end;
 
 	float acc = sqrt(x_g*x_g + y_g*y_g + z_g*z_g);
 
@@ -99,11 +97,12 @@ void adxlbuf_update(void)
 	}
 
 	if (status != STATUS_WAIT_LOCK)
-		return;
+		goto end;
 
 	if (acc < 1) k++;
 	if (k > 10) status = STATUS_LOCKED;
 
+end:
 	xSemaphoreGive(_adxl_buf_mutex); // NOTE: долго держим, нужно бы переосмылить это место
 									 // NOTE: А еще между xSemaphoreTake и xSemaphoreGive кучу кондиционных return;
 }

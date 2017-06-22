@@ -43,53 +43,25 @@ static luminosity_t _luminosity_lastdata[9];
 
 static soilresist_data_t _soilres_lastdata[9];
 
+static uint32_t _time_exit = 0;
+
 static enum {
 	RADIO_STATE_IDLE,
 	RADIO_STATE_COLLECTING
 } radio_state;
-static uint8_t radio_bytes[9];
-static uint8_t radio_index;
-
-void radio_checkForCommads(void) {
-	uint8_t databyte = 0;
-
-	while(rscs_uart_read_some(uart_data, &databyte, 1)) {
-		switch (radio_state) {
-			case RADIO_STATE_IDLE:
-				if(databyte == GSRQ_START) radio_state = RADIO_STATE_COLLECTING;
-				break;
-
-			case RADIO_STATE_COLLECTING:
-				radio_bytes[radio_index] = databyte;
-				radio_index++;
-
-				if(radio_index > 9) {
-					radio_index = 0;
-
-					uint64_t * data_p = (uint64_t *)radio_bytes;
-
-					if( *data_p == GSRQ_CHMOD) {
-						if(gr_status.mode == GR_MODE_IDLE) gr_status.mode = GR_MODE_AWAITING_EXIT;
-					}
-
-					else if( *data_p == GSRQ_CHLUX) {
-						gr_luminosity_threshhold = radio_bytes[8];
-					}
-				}
-
-				break;
-
-			default:
-				break;
-		}
-	}
-}
+static uint8_t radio_bytes[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 void gr_nextMode(void) {
+	if(gr_status.mode == GR_MODE_ONGROUND) return;
+
 	gr_status.mode++;
 	stm32_transmitSystemStatus();
 
 	switch(gr_status.mode) {
+	case GR_MODE_AWAITING_PARACHUTE:
+		_time_exit = rscs_time_get();
+		break;
+
 	case GR_MODE_AWAITING_LEGS:
 		GR_FUSE_ON
 		break;
@@ -108,7 +80,32 @@ void gr_nextMode(void) {
 	}
 }
 
+void radio_checkForCommads(void) {
+	uint8_t databyte = 0;
+
+	while(rscs_uart_read_some(uart_data, &databyte, 1)) {
+		memcpy(radio_bytes, radio_bytes + 1, sizeof(radio_bytes) - 1);
+
+		radio_bytes[7] = databyte;
+
+		uint64_t * data_p = (uint64_t *) radio_bytes;
+
+		if(*data_p == GSRQ_CHMOD) {
+			if(gr_status.mode == GR_MODE_IDLE) gr_nextMode();
+		}
+
+		else if((*data_p & 0x00FFFFFFFFFFFFFF) == GSRQ_CHLUX) {
+			gr_luminosity_threshhold = radio_bytes[7];
+		}
+
+		printf("RADIO: %02llX\n", *data_p);
+	}
+}
+
+
 int main() {
+
+	GR_JMP_INIT
 
 	while(GR_JMP_INACT_VAL); //Если поставили джампер неактивности, то ничего не делаем
 
@@ -116,7 +113,7 @@ int main() {
 
 	init();
 
-	while((rscs_time_get() % 1000) != 0);
+	while((rscs_time_get() % GR_TICK_DELAY_MS) != 0);
 
 	while(1) { //Главный бесконечный цикл
 		uint32_t cycleStartTime = rscs_time_get();
@@ -143,20 +140,24 @@ int main() {
 				if(meas_passed > (meas_valid / 2)) gr_nextMode();
 			}
 
-			printf("TICK: %ld\n", tick_counter);
-			printf("TIME: %ld\n", cycleStartTime);
-			//printf("DHT22: H: %d, P: %d    E:%d\n", telemetry_so_slow.humidity, telemetry_so_slow.temperature_dht, telemetry_so_slow.dht22_error);
-			//printf("ADXL345: %d, %d, %d   e: %d\n", telemetry_fast.accelerations.x, telemetry_fast.accelerations.y, telemetry_fast.accelerations.z, telemetry_fast.adxl345_error);
-			/*printf("TSL: %d e: %d    %d e: %d    %d e: %d\n", telemetry_fast.luminosity[0].lux, telemetry_fast.tsl2561_A_error,
-						telemetry_fast.luminosity[1].lux, telemetry_fast.tsl2561_B_error,
-						telemetry_fast.luminosity[2].lux, telemetry_fast.tsl2561_C_error);*/
+			if(gr_status.mode == GR_MODE_AWAITING_PARACHUTE) {
+				if(rscs_time_get() == (_time_exit + GR_PARACHUTE_TIME_MS)) gr_nextMode();
+			}
+
+			RSCS_DEBUG("TICK: %ld\n", tick_counter);
+			RSCS_DEBUG("TIME: %ld\n", cycleStartTime);
+			RSCS_DEBUG("DHT22: H: %d, P: %d    E:%d\n", telemetry_so_slow.humidity, telemetry_so_slow.temperature_dht, telemetry_so_slow.dht22_error);
+			RSCS_DEBUG("ADXL345: %d, %d, %d   e: %d\n", telemetry_fast.accelerations.x, telemetry_fast.accelerations.y, telemetry_fast.accelerations.z, telemetry_fast.adxl345_error);
+			RSCS_DEBUG("TSL: %d e: %d    %d e: %d    %d e: %d\n", telemetry_fast.luminosity[0].lux, telemetry_fast.luminosity[0].error,
+						telemetry_fast.luminosity[1].lux, telemetry_fast.luminosity[1].error,
+						telemetry_fast.luminosity[2].lux, telemetry_fast.luminosity[2].error);
 		}
 
 		if((tick_counter % GR_TICK_SLOW_PRESCALER) == 0) { //slow part
 			sens_update_slow();
 
-			int meas_passed = 0;
 			if(gr_status.mode == GR_MODE_AWAITING_LEGS) {
+				int meas_passed = 0;
 				for(int i = 0; i < 9; i++) {
 					memcpy(_soilres_lastdata, _soilres_lastdata + 3, 6 * sizeof(soilresist_data_t));
 					memcpy(_soilres_lastdata + 6, telemetry_fast.luminosity, 3 * sizeof(soilresist_data_t));
@@ -171,21 +172,27 @@ int main() {
 
 			if(gr_status_stm.adxl_status == ADXL_STATUS_FINISHED) gr_nextMode();
 
-			printf("RAW ADC: %ld  %ld  %ld\n", telemetry_so_slow.temperature_soil[0], telemetry_so_slow.temperature_soil[1], telemetry_so_slow.temperature_soil[2]);
+			RSCS_DEBUG("RAW ADC: %ld  %ld  %ld\n", telemetry_so_slow.temperature_soil[0], telemetry_so_slow.temperature_soil[1], telemetry_so_slow.temperature_soil[2]);
 
-			/*printf("SOILRES: %ld   %ld   %ld\n", 	telemetry_slow.soilresist_data[0].resistance,
+			RSCS_DEBUG("SOILRES: %ld   %ld   %ld\n", 	telemetry_slow.soilresist_data[0].resistance,
 												telemetry_slow.soilresist_data[1].resistance,
-												telemetry_slow.soilresist_data[2].resistance);*/
-			//printf("BMP280: P:%ld  T:%ld    e: %d\n", telemetry_slow.pressure, telemetry_slow.temperature_bmp, telemetry_slow.bmp280_error);
+												telemetry_slow.soilresist_data[2].resistance);
+			RSCS_DEBUG("BMP280: P:%ld  T:%ld    e: %d\n", telemetry_slow.pressure, telemetry_slow.temperature_bmp, telemetry_slow.bmp280_error);
 		}
 
 		if((tick_counter % GR_TICK_SO_SLOW_PRESCALER) == 0) { //so slow part
 			sens_update_so_slow();
 
-			//printf("DS18B20: %d   e: %d   %d\n", telemetry_so_slow.temperature_ds18, telemetry_so_slow.ds18b20_error_read, telemetry_so_slow.ds18b20_error_conversion);
+			RSCS_DEBUG("DS18B20: %d   e: %d   %d\n", telemetry_so_slow.temperature_ds18, telemetry_so_slow.ds18b20_error_read, telemetry_so_slow.ds18b20_error_conversion);
 		}
 
-		printf("\n\n\n\n");
+		RSCS_DEBUG("\n\n\n\n");
+
+		printf("Mode %d\n", gr_status.mode);
+
+		RSCS_DEBUG("\n\n\n\n");
+
+
 
 		tick_counter++;
 
@@ -199,6 +206,16 @@ int main() {
 
 static void init() {
 	rscs_time_init(); //Служба времени
+
+	{ //Structures
+		gr_status.mode = GR_MODE_IDLE;
+
+		gr_status_stm.adxl_status = ADXL_STATUS_IDLE;
+		gr_status_stm.hasFix = false;
+
+		radio_state = RADIO_STATE_IDLE;
+	}
+
 	sei();
 
 	{ //UART для данных (ID_UART1)
@@ -210,6 +227,8 @@ static void init() {
 		rscs_uart_set_character_size(uart_data, 8);
 		rscs_uart_set_parity(uart_data, RSCS_UART_PARITY_NONE);
 		rscs_uart_set_stop_bits(uart_data, RSCS_UART_STOP_BITS_ONE);
+
+		stdin = stdout = rscs_make_uart_stream(uart_data); //FIXME REMOVE
 	}
 
 #ifdef RSCS_DEBUG

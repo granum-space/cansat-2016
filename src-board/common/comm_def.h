@@ -131,9 +131,8 @@ typedef struct {
 #define AMRQ_ACC_DATA		0xCC
 
 //Запросы от наземной станции к атмеге
-#define GSRQ_START 0x72
 #define GSRQ_CHMOD 0x73B750F83246FEAE
-#define GSRQ_CHLUX 0x43EAFDDAF5679FED
+#define GSRQ_CHLUX 0x00EAFDDAF5679FED
 
 
 #ifdef AVR

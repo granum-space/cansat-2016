@@ -15,7 +15,8 @@
 
 
 //Настройки вывода джампера-активатора
-#define GR_JMP_INACT_VAL (PINA & (1 << 0))
+#define GR_JMP_INIT PORTA |= (1 << 0);
+#define GR_JMP_INACT_VAL !(PINA & (1 << 0))
 
 #define GR_TICK_DELAY_MS 150
 #define GR_TICK_SLOW_PRESCALER 1
@@ -98,5 +99,8 @@
 #define GR_SERVO_MAX_VALUE 2400
 #define GR_SERVO_MIN_VALUE 650
 #define GR_SERVO_START_VALUE GR_SERVO_MIN_VALUE
+
+//Время для раскрытия парашута
+#define GR_PARACHUTE_TIME_MS 3000
 
 #endif /* GRANUM_CONFIG_H_ */

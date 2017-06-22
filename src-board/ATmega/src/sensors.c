@@ -64,9 +64,9 @@ void sens_init() {
 		tsl2561_B = rscs_tsl2561_init(RSCS_TSL2561_ADDR_HIGH);
 		tsl2561_C = rscs_tsl2561_init(RSCS_TSL2561_ADDR_FLOATING);
 
-		printf("TSL error %d\n", rscs_tsl2561_setup(tsl2561_A));
-		printf("TSL error %d\n", rscs_tsl2561_setup(tsl2561_B));
-		printf("TSL error %d\n", rscs_tsl2561_setup(tsl2561_C));
+		RSCS_DEBUG("TSL error %d\n", rscs_tsl2561_setup(tsl2561_A));
+		RSCS_DEBUG("TSL error %d\n", rscs_tsl2561_setup(tsl2561_B));
+		RSCS_DEBUG("TSL error %d\n", rscs_tsl2561_setup(tsl2561_C));
 	}
 
 	rscs_soil_res_init();
@@ -117,7 +117,7 @@ void sens_update_slow() {
 	}
 
 	{//Soilresist
-		printf("SOILRES ERROR: %d\n", rscs_get_soil_res(telemetry_slow.soilresist_data, 15));
+		RSCS_DEBUG("SOILRES ERROR: %d\n", rscs_get_soil_res(telemetry_slow.soilresist_data, 15));
 	}
 
 	telemetry_slow.time = rscs_time_get();

@@ -16,9 +16,6 @@
 
 static TickType_t lastWakeup;
 
-// NOTE: все это не используется
-static accelerations_t accelerations;
-
 void adxl_task(void * args) {
 	(void) args;
 
