@@ -158,6 +158,6 @@
 
 #endif //#ifdef RSCS_DEBUGMODE
 
-
+#define RSCS_INA219_TIMEOUT_CYCLES 1242 //TODO взять как в шаблоне будет
 
 #endif /* CONFIG_H_ */

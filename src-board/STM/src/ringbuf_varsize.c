@@ -4,6 +4,9 @@
 
 #include "ringbuf_varsize.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #define OPR(OP) value = OP; if(value != RSCS_E_NONE) return value;
 
 struct rscs_ringbuf_varsize{
@@ -32,21 +35,21 @@ void rscs_ringbuf_varsize_deinit(rscs_ringbuf_varsize_t * buf){
 }
 
 void rscs_ringbuf_varsize_push(rscs_ringbuf_varsize_t * buf, void * data) {
-	/*ATOMIC_BLOCK(ATOMIC_RESTORESTATE)  FIXME атомарность*/ {
-		if(buf->size == buf->fullsize) {
-			buf->tail++;
-			if(buf->tail == buf->fullsize) buf->tail = 0;
-			buf->size--;
-		}
-		//Проверяем, есть ли место
-		//Пишем значение в голову
-		memcpy(buf->buffer + buf->head, data, buf->element_size);
-		//Двигаем голову
-		buf->head += buf->element_size;
-		if(buf->head == buf->fullsize) buf->head = 0;
-		//Увеличиваем размер записанного
-		buf->size += buf->element_size;
+	taskENTER_CRITICAL();
+	if(buf->size == buf->fullsize) {
+		buf->tail++;
+		if(buf->tail == buf->fullsize) buf->tail = 0;
+		buf->size--;
 	}
+	//Проверяем, есть ли место
+	//Пишем значение в голову
+	memcpy(buf->buffer + buf->head, data, buf->element_size);
+	//Двигаем голову
+	buf->head += buf->element_size;
+	if(buf->head == buf->fullsize) buf->head = 0;
+	//Увеличиваем размер записанного
+	buf->size += buf->element_size;
+	taskEXIT_CRITICAL();
 }
 
 void rscs_ringbuf_varsize_push_many(rscs_ringbuf_varsize_t * buf, void * data, size_t datasize) {
@@ -59,16 +62,18 @@ void rscs_ringbuf_varsize_push_many(rscs_ringbuf_varsize_t * buf, void * data, s
 uint8_t rscs_ringbuf_varsize_pop(rscs_ringbuf_varsize_t * buf, size_t count) {
 	int error = 0;
 	for(size_t i = 0; i < count; i++) {
-		/*ATOMIC_BLOCK(ATOMIC_RESTORESTATE)  FIXME атомарность*/ {
-			if(buf->size == 0) error =  -1;
-			else {
-				//Двигаем хвост
-				buf->tail += buf->element_size;
-				if(buf->tail == buf->fullsize) buf->tail = 0;
-				//Уменьшаем размер записанного
-				buf->size -= buf->element_size;
-			}
+		taskENTER_CRITICAL();
+
+		if(buf->size == 0) error =  -1;
+		else {
+			//Двигаем хвост
+			buf->tail += buf->element_size;
+			if(buf->tail == buf->fullsize) buf->tail = 0;
+			//Уменьшаем размер записанного
+			buf->size -= buf->element_size;
 		}
+
+		taskEXIT_CRITICAL();
 	}
 
 	return error;
@@ -76,17 +81,22 @@ uint8_t rscs_ringbuf_varsize_pop(rscs_ringbuf_varsize_t * buf, size_t count) {
 
 size_t rscs_ringbuf_varsize_getsize(rscs_ringbuf_varsize_t * buf) {
 	size_t size;
-	/*ATOMIC_BLOCK(ATOMIC_RESTORESTATE)  FIXME атомарность*/ {
-		size = buf->size;
-	}
+	taskENTER_CRITICAL();
+
+	size = buf->size;
+
+	taskEXIT_CRITICAL();
 	return size;
 }
 
 size_t rscs_ringbuf_varsize_getfullsize(rscs_ringbuf_varsize_t * buf) {
 	size_t size;
-	/*ATOMIC_BLOCK(ATOMIC_RESTORESTATE)  FIXME атомарность*/ {
-		size = buf->fullsize;
-	}
+
+	taskENTER_CRITICAL();
+
+	size = buf->fullsize;
+
+	taskEXIT_CRITICAL();
 	return size;
 }
 

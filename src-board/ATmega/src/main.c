@@ -43,7 +43,7 @@ static luminosity_t _luminosity_lastdata[9];
 
 static soilresist_data_t _soilres_lastdata[9];
 
-static uint32_t _time_exit = 0;
+static uint32_t _exit_time, _fuse_on_time;
 
 static enum {
 	RADIO_STATE_IDLE,
@@ -59,11 +59,12 @@ void gr_nextMode(void) {
 
 	switch(gr_status.mode) {
 	case GR_MODE_AWAITING_PARACHUTE:
-		_time_exit = rscs_time_get();
+		_exit_time = rscs_time_get();
 		break;
 
 	case GR_MODE_AWAITING_LEGS:
 		GR_FUSE_ON
+		_fuse_on_time = rscs_time_get();
 		break;
 
 	case GR_MODE_LANDING:
@@ -141,7 +142,7 @@ int main() {
 			}
 
 			if(gr_status.mode == GR_MODE_AWAITING_PARACHUTE) {
-				if(rscs_time_get() == (_time_exit + GR_PARACHUTE_TIME_MS)) gr_nextMode();
+				if(rscs_time_get() >= (_exit_time + GR_PARACHUTE_TIME_MS)) gr_nextMode();
 			}
 
 			RSCS_DEBUG("TICK: %ld\n", tick_counter);
@@ -156,11 +157,13 @@ int main() {
 		if((tick_counter % GR_TICK_SLOW_PRESCALER) == 0) { //slow part
 			sens_update_slow();
 
-			if(gr_status.mode == GR_MODE_AWAITING_LEGS) {
+			printf("FUSE ON TIME: %ld\n",_fuse_on_time);
+
+			if((gr_status.mode == GR_MODE_AWAITING_LEGS) && (rscs_time_get() >= (_fuse_on_time + GR_PENETRATORS_MIN_EXIT_TIME_MS))) {
 				int meas_passed = 0;
 				for(int i = 0; i < 9; i++) {
 					memcpy(_soilres_lastdata, _soilres_lastdata + 3, 6 * sizeof(soilresist_data_t));
-					memcpy(_soilres_lastdata + 6, telemetry_fast.luminosity, 3 * sizeof(soilresist_data_t));
+					memcpy(_soilres_lastdata + 6, telemetry_slow.soilresist_data, 3 * sizeof(soilresist_data_t));
 
 					if(_soilres_lastdata[i].resistance > GR_SOILRES_THRESHOLD) {
 						meas_passed++;
@@ -251,4 +254,6 @@ static void init() {
 	rscs_i2c_init();
 
 	sens_init();
+
+	GR_FUSE_INIT
 }

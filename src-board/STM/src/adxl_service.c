@@ -21,13 +21,10 @@ void adxl_task(void * args) {
 
 	lastWakeup = xTaskGetTickCount();
 
-	// NOTE: Перенести adxl375_init сюда (снова принцип какой-то там ответственности)
-	// и проверять ошибку. Если не зашло - мигать лампочкой как псих
+	adxl375_init();
 
 	while(1) {
 		if(adxlbuf_is_triggered()) vTaskDelete(NULL);
-
-		adxl375_read( &(accelerations.x), &(accelerations.y), &(accelerations.z));
 
 		adxlbuf_update();
 

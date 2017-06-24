@@ -100,7 +100,9 @@
 #define GR_SERVO_MIN_VALUE 650
 #define GR_SERVO_START_VALUE GR_SERVO_MIN_VALUE
 
-//Время для раскрытия парашута
-#define GR_PARACHUTE_TIME_MS 3000
+//Время для раскрытия парашюта
+#define GR_PARACHUTE_TIME_MS 2000
 
+//Время минимального прожига
+#define GR_PENETRATORS_MIN_EXIT_TIME_MS 1500
 #endif /* GRANUM_CONFIG_H_ */

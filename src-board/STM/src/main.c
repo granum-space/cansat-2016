@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include "diag/Trace.h"
 
-#include "adxl375.h"
 #include "adxl_buffer.h"
 #include "adxl_service.h"
 #include "spiwork.h"
@@ -59,16 +58,8 @@ void dummy_task(void * args)
 }
 
 int main(int argc, char* argv[]) {
-	// At this stage the system clock should have already been configured
-	//at high speed.
-
-	// Infinite loop
-
-	//xTaskCreate(dummy_task, "task", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, NULL);
-
 	selfStatusMutex = xSemaphoreCreateMutex();
 
-	adxl375_init(10000);
 	spiwork_init();
 	gr_gps = rscs_gps_init(USART2);
 
@@ -79,16 +70,6 @@ int main(int argc, char* argv[]) {
 
 	vTaskStartScheduler();
 	return 0;
-
-	// NOTE: Удалить мусор
-	volatile int i = 798690;
-	while(1) {
-
-		i--;i++;i--;
-		i++;i--;i++;
-		i--;i++;i--;
-
-	}
 }
 
 #pragma GCC diagnostic pop

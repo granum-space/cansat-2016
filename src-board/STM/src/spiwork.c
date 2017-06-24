@@ -15,6 +15,9 @@
 
 #include "stm32f10x_conf.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 //Индексы для вычитки ускорений из буфера
 static uint32_t _acc_low, _acc_high, _acc_now;
 static uint8_t _acc_params_shift;
@@ -50,8 +53,7 @@ void EXTI15_10_IRQHandler() { //CS change handling
 	//Если CS поднялся, то идём в IDLE
 	if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12)) receiver_state = RECEIVER_IDLE;
 	//Иначе ждём запроса от атмеги
-	else receiver_state = RECEIVER_AMRQ; // NOTE: Внимательно тут с гоночной ситуацией
-										 // Это прерывание стреляет когда захочет
+	else receiver_state = RECEIVER_AMRQ;
 	//Сбрасываем флаг прерывания
 	EXTI_ClearITPendingBit(EXTI_Line12);
 }
@@ -98,7 +100,7 @@ void  spiwork_init() {
 	NVIC_InitTypeDef nvic;
 	nvic.NVIC_IRQChannel = SPI2_IRQn;
 	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = 0; //FIXME настроить приоритет прерываний
+	nvic.NVIC_IRQChannelPreemptionPriority = configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY;
 	nvic.NVIC_IRQChannelSubPriority = 0;
 	NVIC_Init(&nvic);
 
@@ -118,7 +120,7 @@ void  spiwork_init() {
 
 	nvic.NVIC_IRQChannel = EXTI15_10_IRQn;
 	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = 14; //FIXME настроить приоритет прерываний
+	nvic.NVIC_IRQChannelPreemptionPriority = configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY;
 	nvic.NVIC_IRQChannelSubPriority = 0;
 	NVIC_Init(&nvic);
 
@@ -136,6 +138,7 @@ void  spiwork_init() {
 }
 
 static void _receive() {
+	taskENTER_CRITICAL_FROM_ISR();
 	uint16_t data = SPI_I2S_ReceiveData(SPI2);
 	switch(receiver_state) {
 
@@ -221,7 +224,7 @@ static void _transmit() {
 	switch(transmitter_state) {
 
 	case TRANSMITTING_ACC:
-		acceleration = adxlbuf_see_from_tail(_acc_now);
+		adxlbuf_see_from_tail(_acc_now, acceleration);
 
 		data = ((uint8_t *) acceleration) [_transiever_index];
 		_transiever_index++;

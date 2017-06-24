@@ -89,7 +89,7 @@ void adxlbuf_update(void)
 
 	float acc = sqrt(x_g*x_g + y_g*y_g + z_g*z_g);
 
-	if (acc >= 3.0) // NOTE: тут чет была жесть на условиях. Переисал
+	if (acc >= 3.0)
 	{
 		// Если был удар
 		 status = STATUS_WAIT_LOCK; // если был удар, то переключаем статус
@@ -104,7 +104,6 @@ void adxlbuf_update(void)
 
 end:
 	xSemaphoreGive(_adxl_buf_mutex); // NOTE: долго держим, нужно бы переосмылить это место
-									 // NOTE: А еще между xSemaphoreTake и xSemaphoreGive кучу кондиционных return;
 }
 
 // Сброс модуля в исходное состояние
@@ -116,10 +115,14 @@ void adxlbuf_reset()
 	xSemaphoreGive(_adxl_buf_mutex);
 }
 
-void * adxlbuf_see_from_tail(size_t shift) {
+void adxlbuf_see_from_tail(size_t shift, void * result) {
+	void * tmp;
+
 	xSemaphoreTake(_adxl_buf_mutex, 0);
-	return rscs_ringbuf_varsize_see_from_tail(adxl_buf, shift);
-	// NOTE: Снова - а как быть с тем, что по указателю, когда мьютекс отпустит?
-	// нужно вынимать весь блок целиком
+
+	tmp = rscs_ringbuf_varsize_see_from_tail(adxl_buf, shift);
+
 	xSemaphoreGive(_adxl_buf_mutex);
+
+	memcpy(result, tmp, ELEMENT_SIZE);
 }

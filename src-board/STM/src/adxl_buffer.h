@@ -39,8 +39,7 @@ void adxlbuf_reset(void);
 bool adxlbuf_is_triggered(void);
 
 // Надстройка над ringbuf_varsize_see_from_tail()
-void * adxlbuf_see_from_tail(size_t shift);
-
+void adxlbuf_see_from_tail(size_t shift, void * result);
 
 
 

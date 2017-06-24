@@ -13,8 +13,6 @@
 #include "adxl375.h"
 #include "ringbuf.h"
 
-#include "config.h"
-
 #define ADXL_SPI SPI1
 
 /* Команды на чтение и запись */
