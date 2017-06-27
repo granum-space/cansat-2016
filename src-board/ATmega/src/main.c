@@ -98,8 +98,6 @@ void radio_checkForCommads(void) {
 		else if((*data_p & 0x00FFFFFFFFFFFFFF) == GSRQ_CHLUX) {
 			gr_luminosity_threshhold = radio_bytes[7];
 		}
-
-		printf("RADIO: %02llX\n", *data_p);
 	}
 }
 
@@ -157,8 +155,6 @@ int main() {
 		if((tick_counter % GR_TICK_SLOW_PRESCALER) == 0) { //slow part
 			sens_update_slow();
 
-			printf("FUSE ON TIME: %ld\n",_fuse_on_time);
-
 			if((gr_status.mode == GR_MODE_AWAITING_LEGS) && (rscs_time_get() >= (_fuse_on_time + GR_PENETRATORS_MIN_EXIT_TIME_MS))) {
 				int meas_passed = 0;
 				for(int i = 0; i < 9; i++) {
@@ -174,6 +170,8 @@ int main() {
 			}
 
 			if(gr_status_stm.adxl_status == ADXL_STATUS_FINISHED) gr_nextMode();
+
+			printf("STM32 ADXL: %d  %d  %d\n", gr_status_stm.acc_last.x, gr_status_stm.acc_last.y, gr_status_stm.acc_last.z);
 
 			RSCS_DEBUG("RAW ADC: %ld  %ld  %ld\n", telemetry_so_slow.temperature_soil[0], telemetry_so_slow.temperature_soil[1], telemetry_so_slow.temperature_soil[2]);
 
@@ -221,8 +219,8 @@ static void init() {
 
 	sei();
 
-	{ //UART для данных (ID_UART1)
-		uart_data = rscs_uart_init(GR_UART_DATA_ID, 	RSCS_UART_FLAG_ENABLE_RX
+	{ //UART
+		uart_data = rscs_uart_init(GR_UART_ID, 	RSCS_UART_FLAG_ENABLE_RX
 														|RSCS_UART_FLAG_BUFFER_RX
 														|RSCS_UART_FLAG_ENABLE_TX
 														|RSCS_UART_FLAG_BUFFER_TX);
@@ -231,23 +229,8 @@ static void init() {
 		rscs_uart_set_parity(uart_data, RSCS_UART_PARITY_NONE);
 		rscs_uart_set_stop_bits(uart_data, RSCS_UART_STOP_BITS_ONE);
 
-		stdin = stdout = rscs_make_uart_stream(uart_data); //FIXME REMOVE
+		stdin = stdout = rscs_make_uart_stream(uart_data);
 	}
-
-#ifdef RSCS_DEBUG
-	{ //UART для дебага
-		uart_debug = rscs_uart_init(GR_UART_DEBUG_ID, 	RSCS_UART_FLAG_ENABLE_RX
-														|RSCS_UART_FLAG_BUFFER_RX
-														|RSCS_UART_FLAG_BUFFER_TX
-														|RSCS_UART_FLAG_ENABLE_TX);
-		rscs_uart_set_baudrate(uart_debug, 9600);
-		rscs_uart_set_character_size(uart_debug, 8);
-		rscs_uart_set_parity(uart_debug, RSCS_UART_PARITY_NONE);
-		rscs_uart_set_stop_bits(uart_debug, RSCS_UART_STOP_BITS_ONE);
-
-		RSCS_DEBUG_INIT(uart_debug)
-	}
-#endif
 
 	rscs_spi_init();
 

@@ -17,6 +17,9 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
+
+TaskHandle_t spi_task_handle;
 
 //Индексы для вычитки ускорений из буфера
 static uint32_t _acc_low, _acc_high, _acc_now;
@@ -44,9 +47,16 @@ static enum {
 	TRANSMITTING_ACC,
 } transmitter_state;
 
+static uint16_t _data_lastRx = 0;
+
 void SPI2_IRQHandler() {
-	_receive();
-	_transmit();
+	BaseType_t switchContext;
+
+	vTaskNotifyGiveFromISR(spi_task_handle, &switchContext);
+
+	_data_lastRx = SPI_I2S_ReceiveData(SPI2);
+
+	portEND_SWITCHING_ISR(switchContext);
 }
 
 void EXTI15_10_IRQHandler() { //CS change handling
@@ -59,6 +69,7 @@ void EXTI15_10_IRQHandler() { //CS change handling
 }
 
 void  spiwork_init() {
+
 	//Инициализируем указатели на структуры статуса
 	gr_status_p = &gr_status0;
 	gr_status_p_tmp = &gr_status1;
@@ -97,12 +108,9 @@ void  spiwork_init() {
 	//Настройка прерываний SPI
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
 
-	NVIC_InitTypeDef nvic;
-	nvic.NVIC_IRQChannel = SPI2_IRQn;
-	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY;
-	nvic.NVIC_IRQChannelSubPriority = 0;
-	NVIC_Init(&nvic);
+	NVIC_SetPriority(SPI2_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1);
+
+	NVIC_EnableIRQ(SPI2_IRQn);
 
 	//Настройка прерываний EXTI (CS)
 	EXTI_InitTypeDef exti;
@@ -118,11 +126,9 @@ void  spiwork_init() {
 
 	EXTI_Init(&exti);
 
-	nvic.NVIC_IRQChannel = EXTI15_10_IRQn;
-	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY;
-	nvic.NVIC_IRQChannelSubPriority = 0;
-	NVIC_Init(&nvic);
+	NVIC_SetPriority(EXTI15_10_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY + 1);
+
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 
 	NVIC_EnableIRQ(SPI2_IRQn);
@@ -138,8 +144,7 @@ void  spiwork_init() {
 }
 
 static void _receive() {
-	taskENTER_CRITICAL_FROM_ISR();
-	uint16_t data = SPI_I2S_ReceiveData(SPI2);
+	uint16_t data = _data_lastRx;
 	switch(receiver_state) {
 
 	case RECEIVER_AMRQ:
@@ -160,11 +165,10 @@ static void _receive() {
 			_transiever_index = 0;
 
 			transmitter_state = TRANSMITTING_SELFSTATUS;
-			xSemaphoreTakeFromISR(selfStatusMutex, NULL);
 
-			memcpy(&_status, &selfStatus, sizeof(selfStatus));
-
-			xSemaphoreGiveFromISR(selfStatusMutex, NULL);
+			taskENTER_CRITICAL();
+			_status = selfStatus;
+			taskEXIT_CRITICAL();
 
 			break;
 
@@ -219,14 +223,14 @@ static void _receive() {
 static void _transmit() {
 	uint16_t data = 0xFF;
 
-	accelerations_t * acceleration;
+	accelerations_t acceleration;
 
 	switch(transmitter_state) {
 
 	case TRANSMITTING_ACC:
-		adxlbuf_see_from_tail(_acc_now, acceleration);
+		adxlbuf_see_from_tail(_acc_now, &acceleration);
 
-		data = ((uint8_t *) acceleration) [_transiever_index];
+		data = ((uint8_t *) &acceleration) [_transiever_index];
 		_transiever_index++;
 
 		if(_transiever_index == sizeof(accelerations_t)) {
@@ -257,4 +261,19 @@ static void _transmit() {
 	}
 
 	SPI_I2S_SendData(SPI2, data);
+}
+
+void spi_task(void * args) {
+	(void) args;
+
+	spiwork_init();
+
+	while(1){
+		ulTaskNotifyTake(pdFALSE, 0);
+
+		taskENTER_CRITICAL();
+		_receive();
+		_transmit();
+		taskEXIT_CRITICAL();
+	}
 }

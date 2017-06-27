@@ -10,7 +10,11 @@
 
 #include "ringbuf.h"
 
+extern TaskHandle_t spi_task_handle;
+
 void  spiwork_init();
+
+void spi_task(void * args);
 
 
 #endif /* SPIWORK_H_ */

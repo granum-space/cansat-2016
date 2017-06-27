@@ -13,6 +13,9 @@
 
 #include "gps_nmea.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 typedef enum
 {
 	GPS_STATE_IDLE, 		// ждем доллара
@@ -80,7 +83,7 @@ rscs_gps_t * rscs_gps_init(USART_TypeDef * uartId)
 	NVIC_InitTypeDef nvic;
 	nvic.NVIC_IRQChannel = USART2_IRQn;
 	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = 0;
+	nvic.NVIC_IRQChannelPreemptionPriority = configMAX_SYSCALL_INTERRUPT_PRIORITY + 1;
 	nvic.NVIC_IRQChannelSubPriority = 0;
 	NVIC_Init(&nvic);
 
@@ -105,14 +108,19 @@ static bool _handle_message(const char * msg_signed, float * lon, float * lat,
 	struct minmea_sentence_gga frame;
 	if( !minmea_parse_gga(&frame, msg_signed)) return false;
 
-	xSemaphoreTake(selfStatusMutex, 0); //TODO для красоты можно передавать хендл мьютекса параметром
+	float _lon = minmea_tofloat(&frame.longitude);
+	float _lat = minmea_tofloat(&frame.latitude);
+	float _height = minmea_tofloat(&frame.altitude);
+	bool _hasFix = frame.fix_quality != 0;
 
-	*lon = minmea_tofloat(&frame.longitude);
-	*lat = minmea_tofloat(&frame.latitude);
-	*height = minmea_tofloat(&frame.altitude);
-	*hasFix = frame.fix_quality != 0;
+	taskENTER_CRITICAL();
 
-	xSemaphoreGive(selfStatusMutex);
+	*lon = _lon;
+	*lat = _lat;
+	*height = _height;
+	*hasFix = _hasFix;
+
+	taskEXIT_CRITICAL();
 
 	return 1;
 }
@@ -210,6 +218,8 @@ again:
 
 void gps_task(void * args) {
 	(void) args;
+
+	gr_gps = rscs_gps_init(USART2);
 
 	while(1) {
 		rscs_gps_read(gr_gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));

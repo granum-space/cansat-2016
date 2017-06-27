@@ -176,9 +176,9 @@ void adxl375_cast_to_G(int16_t x, int16_t y, int16_t z, float * x_g, float * y_g
 
 void adxl375_GetGXYZ(int16_t* x, int16_t* y, int16_t* z, float* x_g, float* y_g, float* z_g)
 {
-	*x = 0;
-	*y = 0;
-	*z = 0;
+	*x = 76;
+	*y = 89;
+	*z = 12;
 
 	adxl375_read(x, y, z);
 

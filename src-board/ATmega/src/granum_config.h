@@ -69,8 +69,7 @@
 #define GR_DUMP_FFS_SYNC_PERIOD 0
 
 //Настройки UART
-#define GR_UART_DATA_ID RSCS_UART_ID_UART0
-#define GR_UART_DEBUG_ID RSCS_UART_ID_UART1
+#define GR_UART_ID RSCS_UART_ID_UART1
 
 //Макросы управления CS к STM32
 #define GR_STM_SELECT PORTB &= ~(1 << 6);

@@ -122,6 +122,8 @@ typedef struct {
 	bool hasFix;
 	float lat, lon, alt;
 
+	accelerations_t acc_last;
+
 } gr_status_stm_t;
 
 

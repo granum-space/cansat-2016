@@ -50,8 +50,8 @@ void __initialize_hardware(void)
 	USART_Cmd(USART3, ENABLE);
 
 	// требуется freertos-ом (http://www.freertos.org/RTOS-Cortex-M3-M4.html)
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
-	NVIC_SetPriorityGrouping(0);
+	//NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+	//NVIC_SetPriorityGrouping(0);
 }
 
 

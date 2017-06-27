@@ -4,6 +4,8 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "string.h"
+
 #define BUF_SIZE 1000
 #define ELEMENT_SIZE sizeof(accelerations_t)
 #define ACC_GROW 15
@@ -32,6 +34,8 @@ static const accelerations_t * _read_from_head(size_t offset)
 // Инициализация модуля
 void adxlbuf_init()
 {
+	adxl375_init();
+
 	_adxl_buf_mutex = xSemaphoreCreateMutex();
 
 	xSemaphoreTake(_adxl_buf_mutex, 0);
@@ -103,7 +107,7 @@ void adxlbuf_update(void)
 	if (k > 10) status = STATUS_LOCKED;
 
 end:
-	xSemaphoreGive(_adxl_buf_mutex); // NOTE: долго держим, нужно бы переосмылить это место
+	xSemaphoreGive(_adxl_buf_mutex);
 }
 
 // Сброс модуля в исходное состояние

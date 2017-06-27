@@ -19,8 +19,6 @@ static bool fs_goodFile = false;
 static FIL fs_file;
 static char * fs_filename;
 
-static bool uart_inited = false;
-
 static inline void _initFile() {
 	FRESULT res;
 	size_t i = 0;
@@ -72,23 +70,10 @@ static inline void _initFile() {
 	}
 }
 
-static inline void _initUart() {
-	uart_debug = rscs_uart_init(RSCS_UART_ID_UART0,     RSCS_UART_FLAG_ENABLE_RX
-													|RSCS_UART_FLAG_BUFFER_RX
-													|RSCS_UART_FLAG_ENABLE_TX
-													|RSCS_UART_FLAG_BUFFER_TX);
-	rscs_uart_set_baudrate(uart_data, 9600);
-	rscs_uart_set_character_size(uart_data, 8);
-	rscs_uart_set_parity(uart_data, RSCS_UART_PARITY_NONE);
-	rscs_uart_set_stop_bits(uart_data, RSCS_UART_STOP_BITS_ONE);
-	uart_inited = true;
-}
-
 void dump_init(char * filename)
 {
 	fs_filename = filename;
 	_initFile();
-	_initUart();
 }
 
 void dump(const void * data, size_t datasize)
