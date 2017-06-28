@@ -52,18 +52,17 @@ static uint16_t _data_lastRx = 0;
 void SPI2_IRQHandler() {
 	BaseType_t switchContext;
 
-	vTaskNotifyGiveFromISR(spi_task_handle, &switchContext);
+	led_set(true);
 
 	_data_lastRx = SPI_I2S_ReceiveData(SPI2);
+
+	vTaskNotifyGiveFromISR(spi_task_handle, &switchContext);
 
 	portEND_SWITCHING_ISR(switchContext);
 }
 
 void EXTI15_10_IRQHandler() { //CS change handling
-	//Если CS поднялся, то идём в IDLE
-	if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_12)) receiver_state = RECEIVER_IDLE;
-	//Иначе ждём запроса от атмеги
-	else receiver_state = RECEIVER_AMRQ;
+	receiver_state = RECEIVER_AMRQ;
 	//Сбрасываем флаг прерывания
 	EXTI_ClearITPendingBit(EXTI_Line12);
 }
@@ -108,7 +107,7 @@ void  spiwork_init() {
 	//Настройка прерываний SPI
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
 
-	NVIC_SetPriority(SPI2_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1);
+	NVIC_SetPriority(SPI2_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
 
 	NVIC_EnableIRQ(SPI2_IRQn);
 
@@ -122,11 +121,11 @@ void  spiwork_init() {
 	exti.EXTI_Line = EXTI_Line12;
 	exti.EXTI_LineCmd = ENABLE;
 	exti.EXTI_Mode = EXTI_Mode_Interrupt;
-	exti.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+	exti.EXTI_Trigger = EXTI_Trigger_Falling;
 
 	EXTI_Init(&exti);
 
-	NVIC_SetPriority(EXTI15_10_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY + 1);
+	NVIC_SetPriority(EXTI15_10_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
 
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -269,7 +268,9 @@ void spi_task(void * args) {
 	spiwork_init();
 
 	while(1){
-		ulTaskNotifyTake(pdFALSE, 0);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		led_set(false);
 
 		taskENTER_CRITICAL();
 		_receive();

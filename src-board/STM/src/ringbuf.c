@@ -6,31 +6,23 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-struct rscs_ringbuf{
-	size_t fullsize, //Полный размер буфера
-	size, //Размер записанных данных
-	head, //Смещение головы
-	tail; //Смещение хвоста
-	uint8_t * buffer; 	//Адрес буфера в памяти
-};
+static rscs_ringbuf_t buf_static;
+static uint8_t bufbuf[200];
 
 rscs_ringbuf_t * rscs_ringbuf_init(size_t bufsyze){
-	rscs_ringbuf_t * buf = (rscs_ringbuf_t *) malloc(sizeof(rscs_ringbuf_t));
-	buf->buffer = (uint8_t *) malloc(bufsyze);
-	buf->fullsize = bufsyze;
-	buf->head = 0;
-	buf->tail = 0;
-	buf->size = 0;
-	return buf;
+	buf_static.buffer = bufbuf;
+	buf_static.fullsize = bufsyze;
+	buf_static.head = 0;
+	buf_static.tail = 0;
+	buf_static.size = 0;
+	return &buf_static;
 }
 
 void rscs_ringbuf_deinit(rscs_ringbuf_t * buf){
-	free(buf);
+	(void) buf;
 }
 
 void rscs_ringbuf_push(rscs_ringbuf_t * buf, uint8_t value) {
-	taskENTER_CRITICAL();
-
 	if(buf->size == buf->fullsize) {
 		buf->tail++;
 		if(buf->tail == buf->fullsize) buf->tail = 0;
@@ -44,8 +36,6 @@ void rscs_ringbuf_push(rscs_ringbuf_t * buf, uint8_t value) {
 	if(buf->head == buf->fullsize) buf->head = 0;
 	//Увеличиваем размер записанного
 	buf->size++;
-
-	taskEXIT_CRITICAL();
 }
 
 void rscs_ringbuf_push_many(rscs_ringbuf_t * buf, void * data, size_t datasize) {

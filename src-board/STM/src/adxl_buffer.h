@@ -16,7 +16,7 @@
 #include "stdbool.h"
 #include "math.h"
 #include "adxl_buffer.h"
-#include "ringbuf_varsize.h"
+#include "ringbuf_acc.h"
 #include "adxl375.h"
 #include "comm_def.h"
 
@@ -39,7 +39,7 @@ void adxlbuf_reset(void);
 bool adxlbuf_is_triggered(void);
 
 // Надстройка над ringbuf_varsize_see_from_tail()
-void adxlbuf_see_from_tail(size_t shift, void * result);
+int8_t adxlbuf_see_from_tail(size_t shift, void * result);
 
 
 

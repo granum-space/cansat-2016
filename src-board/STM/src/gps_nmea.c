@@ -36,23 +36,19 @@ struct rscs_gps_t
 rscs_ringbuf_t * gps_buf;
 
 void USART2_IRQHandler() {
-	//USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+	USART_ClearITPendingBit(USART2, USART_IT_RXNE);
 	rscs_ringbuf_push(gps_buf, USART_ReceiveData(USART2));
 }
+
+static rscs_gps_t _descr;
 
 rscs_gps_t * rscs_gps_init(USART_TypeDef * uartId)
 {
 	gps_buf = rscs_ringbuf_init(200);
-	// создаем дескритор и настраиваем
-	rscs_gps_t * retval = (rscs_gps_t *)malloc(sizeof(rscs_gps_t));
-	if (NULL == retval)
-	{
-		return NULL;
-	}
 
-	retval->uart = uartId;
-	retval->buffer_carret = 0;
-	retval->state = GPS_STATE_IDLE;
+	_descr.uart = uartId;
+	_descr.buffer_carret = 0;
+	_descr.state = GPS_STATE_IDLE;
 
 	// настройка UART
 
@@ -76,29 +72,28 @@ rscs_gps_t * rscs_gps_init(USART_TypeDef * uartId)
 	uartInit.USART_StopBits = USART_StopBits_1;
 	uartInit.USART_WordLength = USART_WordLength_8b;
 
-	USART_Init(retval->uart, &uartInit);
+	USART_Init(_descr.uart, &uartInit);
 
 	USART_Cmd(USART2, ENABLE);
 
 	NVIC_InitTypeDef nvic;
 	nvic.NVIC_IRQChannel = USART2_IRQn;
 	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = configMAX_SYSCALL_INTERRUPT_PRIORITY + 1;
+	nvic.NVIC_IRQChannelPreemptionPriority = configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1;
 	nvic.NVIC_IRQChannelSubPriority = 0;
 	NVIC_Init(&nvic);
 
 	NVIC_EnableIRQ(USART2_IRQn);
 
-	USART_ITConfig(retval->uart, USART_IT_RXNE, ENABLE);
+	USART_ITConfig(_descr.uart, USART_IT_RXNE, ENABLE);
 
-	return retval;
+	return &_descr;
 }
 
 
 void rscs_gps_deinit(rscs_gps_t * gps)
 {
 	USART_DeInit(gps->uart);
-	free(gps);
 }
 
 

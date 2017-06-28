@@ -49,7 +49,7 @@ void adxl_task(void * args) {
 
 	TIM_Cmd(TIM2, ENABLE);
 
-	NVIC_SetPriority(TIM2_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1);
+	NVIC_SetPriority(TIM2_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 2);
 
 	NVIC_EnableIRQ(SPI2_IRQn);
 

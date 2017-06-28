@@ -23,3 +23,15 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName)
 	trace_printf("stack_overflow at %s\n", pcTaskName);
 	abort();
 }
+
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
+                                    StackType_t **ppxIdleTaskStackBuffer,
+                                    uint32_t *pulIdleTaskStackSize ) {
+
+	static StaticTask_t xIdleTaskTCB;
+	static StackType_t uxIdleTaskStack[ configMINIMAL_STACK_SIZE ];
+
+    *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
+    *ppxIdleTaskStackBuffer = uxIdleTaskStack;
+    *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}

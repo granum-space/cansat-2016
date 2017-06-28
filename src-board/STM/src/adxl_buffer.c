@@ -4,12 +4,15 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "gr_config.h"
+
 #include "string.h"
 
-#define BUF_SIZE 1000
-#define ELEMENT_SIZE sizeof(accelerations_t)
+#include "ringbuf_acc.h"
+
 #define ACC_GROW 15
 
+static StaticSemaphore_t _adxl_mutex_buf;
 static xSemaphoreHandle _adxl_buf_mutex;
 
 typedef enum {
@@ -21,14 +24,16 @@ typedef enum {
 
 static adxlbuf_status status;
 
-static rscs_ringbuf_varsize_t * adxl_buf;
+static rscs_ringbuf_t * adxl_buf;
 
 int k = 0;
 
+static accelerations_t _last_acc;
+
 static const accelerations_t * _read_from_head(size_t offset)
 {
-	void * elemInBufferVoid = rscs_ringbuf_varsize_see_from_head(adxl_buf, offset);
-	return (accelerations_t*)elemInBufferVoid;
+	rscs_ringbuf_acc_see_from_head(adxl_buf, &_last_acc, offset);
+	return &_last_acc;
 }
 
 // Инициализация модуля
@@ -36,10 +41,10 @@ void adxlbuf_init()
 {
 	adxl375_init();
 
-	_adxl_buf_mutex = xSemaphoreCreateMutex();
+	_adxl_buf_mutex = xSemaphoreCreateMutexStatic(&_adxl_mutex_buf);
 
 	xSemaphoreTake(_adxl_buf_mutex, 0);
-	adxl_buf = rscs_ringbuf_varsize_init(BUF_SIZE, ELEMENT_SIZE);
+	adxl_buf = rscs_ringbuf_acc_init(ACC_BUF_SIZE);
 	xSemaphoreGive(_adxl_buf_mutex);
 
 	status = STATUS_SIMPLE_READ;
@@ -86,7 +91,7 @@ void adxlbuf_update(void)
 	adxl375_GetGXYZ(&accelerations.x, &accelerations.y, &accelerations.z, &x_g, &y_g, &z_g);
 
 	xSemaphoreTake(_adxl_buf_mutex, 0);
-	rscs_ringbuf_varsize_push(adxl_buf, &accelerations);
+	rscs_ringbuf_acc_push(adxl_buf, &accelerations);
 
 	if (status == STATUS_SIMPLE_READ)
 		goto end;
@@ -119,14 +124,13 @@ void adxlbuf_reset()
 	xSemaphoreGive(_adxl_buf_mutex);
 }
 
-void adxlbuf_see_from_tail(size_t shift, void * result) {
-	void * tmp;
+int8_t adxlbuf_see_from_tail(size_t shift, void * result) {
 
 	xSemaphoreTake(_adxl_buf_mutex, 0);
 
-	tmp = rscs_ringbuf_varsize_see_from_tail(adxl_buf, shift);
+	int8_t retval = rscs_ringbuf_acc_see_from_tail(adxl_buf, (accelerations_t *) result, shift);
 
 	xSemaphoreGive(_adxl_buf_mutex);
 
-	memcpy(result, tmp, ELEMENT_SIZE);
+	return retval;
 }
