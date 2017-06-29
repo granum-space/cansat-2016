@@ -19,7 +19,7 @@ gr_telemetry_slow_t telemetry_slow;
 gr_telemetry_so_slow_t telemetry_so_slow;
 
 //Статусы
-gr_status_stm_t gr_status_stm;
+gr_stm_state_t gr_stm_state;
 gr_status_t gr_status;
 
 //Порог освещённости для опознания выхода из ракеты (в люксах)

@@ -174,9 +174,9 @@ int main() {
 				if(meas_passed > 4) gr_nextMode();
 			}
 
-			if(gr_status_stm.adxl_status == ADXL_STATUS_FINISHED) gr_nextMode();
+			if(gr_stm_state.acc_state.accbuf_status == ACC_STATUS_LOCKED) gr_nextMode();
 
-			printf("STM32 ADXL: %d  %d  %d\n", gr_status_stm.acc_last.x, gr_status_stm.acc_last.y, gr_status_stm.acc_last.z);
+			printf("STM32 ADXL: %d  %d  %d\n", gr_stm_state.acc_state.current_acc.x, gr_stm_state.acc_state.current_acc.y, gr_stm_state.acc_state.current_acc.z);
 
 			RSCS_DEBUG("RAW ADC: %ld  %ld  %ld\n", telemetry_so_slow.temperature_soil[0], telemetry_so_slow.temperature_soil[1], telemetry_so_slow.temperature_soil[2]);
 
@@ -216,8 +216,8 @@ static void init() {
 	{ //Structures
 		gr_status.mode = GR_MODE_IDLE;
 
-		gr_status_stm.adxl_status = ADXL_STATUS_IDLE;
-		gr_status_stm.hasFix = false;
+		gr_stm_state.acc_state.accbuf_status = ACC_STATUS_SIMPLE_READ;
+		gr_stm_state.gps_state.has_fix = false;
 
 		radio_state = RADIO_STATE_IDLE;
 	}

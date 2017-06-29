@@ -45,7 +45,7 @@ void stm32_updateSTMStatus(){
 
 	_spi_do_delay(AMRQ_SELFSTATUS_Tx);
 
-	_spi_read_delay(&gr_status_stm, sizeof(gr_status_stm), 0xff);
+	_spi_read_delay(&gr_stm_state, sizeof(gr_stm_state), 0xff);
 
 	GR_STM_UNSELECT
 }

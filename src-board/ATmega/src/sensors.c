@@ -110,10 +110,10 @@ void sens_update_slow() {
 	{//STM32
 		stm32_updateSTMStatus();
 
-		telemetry_slow.latitude = gr_status_stm.lat;
-		telemetry_slow.longtitude = gr_status_stm.lon;
-		telemetry_slow.altitude = gr_status_stm.alt;
-		telemetry_slow.gps_hasFix = gr_status_stm.hasFix;
+		telemetry_slow.latitude = gr_stm_state.gps_state.lat;
+		telemetry_slow.longtitude = gr_stm_state.gps_state.lon;
+		telemetry_slow.altitude = gr_stm_state.gps_state.height;
+		telemetry_slow.gps_hasFix = gr_stm_state.gps_state.has_fix;
 	}
 
 	{//Soilresist

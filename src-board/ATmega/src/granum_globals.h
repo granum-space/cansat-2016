@@ -12,7 +12,6 @@
 
 #include "comm_def.h"
 
-
 //Дескрипторы устройств
 
 extern rscs_ads1115_t * ads1115;
@@ -34,7 +33,7 @@ extern gr_telemetry_slow_t telemetry_slow;
 extern gr_telemetry_so_slow_t telemetry_so_slow;
 
 //Статусы
-extern gr_status_stm_t gr_status_stm;
+extern gr_stm_state_t gr_stm_state;
 extern gr_status_t gr_status;
 
 //Порог освещённости для опознания выхода из ракеты (в люксах)
