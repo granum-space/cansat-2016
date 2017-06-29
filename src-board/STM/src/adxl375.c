@@ -11,7 +11,6 @@
 #include <math.h>
 
 #include "adxl375.h"
-#include "ringbuf.h"
 
 #define ADXL_SPI SPI1
 
@@ -251,6 +250,7 @@ int adxl375_getRegisterValue(uint8_t registerAddress, uint8_t * read_data) {
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);// CS в 1
 	return 0;
 }
+
 
 int adxl375_setRegisterValue(uint8_t registerAddress, uint8_t registerValue) {
 	GPIO_ResetBits(GPIOA, GPIO_Pin_4);// CS в 0

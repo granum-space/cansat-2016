@@ -11,14 +11,11 @@
 #include "stdint.h"
 #include "stdbool.h"
 
-#include "ringbuf.h"
-
-extern bool adxl_dointwork;
-
 typedef enum {
 	ADXL375_E_NONE = 0,
 	ADXL375_E_DEVID = -1,
 } adxl375_e_t;
+
 
 // параметры пределов измерений
 typedef enum
