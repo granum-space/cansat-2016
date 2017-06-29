@@ -9,7 +9,6 @@
 #include <minmea.h>
 
 #include "ringbuf.h"
-#include "globals.h"
 
 #include "gps_nmea.h"
 

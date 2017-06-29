@@ -157,22 +157,11 @@ void adxl375_read(int16_t * x, int16_t * y, int16_t * z)
 }
 
 void adxl375_cast_to_G(int16_t x, int16_t y, int16_t z, float * x_g, float * y_g, float * z_g) {
-	/*uint8_t  range = 1;
-
-	range = (1 << device->range);
-
-	if(x >> 9) *x_g = -(float)(!x + 1);	//если 10-й бит равен 1, то число отрицательное
-	if(x >> 9) *y_g = -(float)(!y + 1);
-	if(x >> 9) *z_g = -(float)(!z + 1);
-
-	*x_g = (*x_g) * ADXL375_SCALE_FACTOR * range;
-	*y_g = (*y_g) * ADXL375_SCALE_FACTOR * range;
-	*z_g = (*z_g) * ADXL375_SCALE_FACTOR * range;*/
-
 	*x_g = x * 0.050f;
 	*y_g = y * 0.050f;
 	*z_g = z * 0.050f;
 }
+
 
 void adxl375_GetGXYZ(int16_t* x, int16_t* y, int16_t* z, float* x_g, float* y_g, float* z_g)
 {
@@ -184,6 +173,7 @@ void adxl375_GetGXYZ(int16_t* x, int16_t* y, int16_t* z, float* x_g, float* y_g,
 
 	adxl375_cast_to_G(*x, *y, *z, x_g, y_g, z_g);
 }
+
 
 static void hw_init()
 {

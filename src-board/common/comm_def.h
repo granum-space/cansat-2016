@@ -20,16 +20,19 @@ typedef struct {
 	int16_t x, y, z;
 } accelerations_t;
 
+
 typedef struct {
 	int16_t adc_low, adc_high;
 	uint32_t resistance;
 } soilresist_data_t;
+
 
 typedef struct {
 	uint16_t v0, v1;
 	unsigned int lux;
 	int8_t error;
 } luminosity_t;
+
 
 //Телеметрийные пакеты
 typedef struct {
@@ -47,6 +50,7 @@ typedef struct {
 
 	uint32_t checksumm;
 } gr_telemetry_fast_t;
+
 
 typedef struct {
 	uint16_t marker; //Must be 0xFCFC
@@ -67,6 +71,7 @@ typedef struct {
 
 	uint32_t checksumm;
 } gr_telemetry_slow_t;
+
 
 typedef struct {
 	uint16_t marker; //Must be 0xFC1A
@@ -89,6 +94,7 @@ typedef struct {
 	uint32_t checksumm;
 } gr_telemetry_so_slow_t;
 
+
 typedef struct {
 	uint16_t marker; //Must be 0xFA7B
 	uint16_t start_i, end_i;
@@ -96,6 +102,7 @@ typedef struct {
 
 	accelerations_t data[];
 } gr_telemetry_adxl375_t;
+
 
 typedef struct {
 	enum {
@@ -107,24 +114,43 @@ typedef struct {
 		GR_MODE_ONGROUND
 	} mode;
 
+	// FIXME: УБрать в очередной статус ? или убрать нафиг
 	bool seeds_activated;
 } gr_status_t;
 
-enum {
-	ADXL_STATUS_IDLE,
-	ADXL_STATUS_COLLECTING,
-	ADXL_STATUS_FINISHED
-} stm_adxl_status;
+
+// Тип для отступов ускорений
+typedef uint16_t gr_stm_accbuf_offset_t;
+
+
+// Запрос на передачу данных накопленных ускорений
+typedef struct
+{
+	gr_stm_accbuf_offset_t offset;	// отступ запрашиваемой зоны
+	gr_stm_accbuf_offset_t size;	// размер запрашиваемой зоны
+} gr_stm_accbuf_values_request;
+
+
+typedef enum {
+	ACC_STATUS_SIMPLE_READ,		//!< Читаем ускорения, но не анализируем их
+	ACC_STATUS_ACTIVE,			//!< Читаем ускорения, анализируем их и принимаем решение о посадке
+	ACC_STATUS_WAIT_LOCK,		//!< Мы уже почувствовали удар о Землю и сейчас накапливаем данные о нем
+	ACC_STATUS_LOCKED			//!< Процесс входа в Землю закончился, не принимаем новые данные
+} gr_stm_accbuf_status_t;
+
+
+typedef struct
+{
+	accelerations_t current_acc;
+	gr_stm_accbuf_status_t accbuf_status;
+	gr_stm_accbuf_offset_t accbuf_buffer_carret;
+} gr_stm_acc_state_t;
+
 
 typedef struct {
-
-	uint8_t adxl_status; //Одно из значений enum stm_adxl_status
-	bool hasFix;
-	float lat, lon, alt;
-
-	accelerations_t acc_last;
-
-} gr_status_stm_t;
+	gr_stm_acc_state_t acc_state;
+	// FIXME: Статус GPS
+} gr_stm_state_t;
 
 
 //Запросы от атмеги к стм

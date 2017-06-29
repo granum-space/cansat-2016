@@ -5,9 +5,13 @@
  *      Author: snork
  */
 
-#include "led.h"
 
 #include <stm32f10x_conf.h>
+
+#include <stdbool.h>
+
+#include "led.h"
+
 
 void led_init(void)
 {
@@ -23,13 +27,22 @@ void led_init(void)
 void led_set(bool state)
 {
 	// лампочка зажигается при нуле на линии, т.к. подключена к пину в режиме октрытого коллектора
-	GPIO_WriteBit(GPIOC, GPIO_Pin_13, state ? RESET : SET);
+	if (state)
+		GPIOC->BRR |= GPIO_Pin_13;
+	else
+		GPIOC->BSRR |= GPIO_Pin_13;
 }
+
 
 void led_toggle(void)
 {
-	bool bit = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_13);
-	GPIO_WriteBit(GPIOC, GPIO_Pin_13, !bit);
+	static bool led = true;
+	if (led)
+		GPIOC->BRR |= GPIO_Pin_13;
+	else
+		GPIOC->BSRR |= GPIO_Pin_13;
+
+	led = !led;
 }
 
 

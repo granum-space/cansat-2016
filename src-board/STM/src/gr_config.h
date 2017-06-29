@@ -10,7 +10,17 @@
 
 #include "comm_def.h"
 
-#define ACC_BUF_SIZE 1000
-#define ELEMENT_SIZE sizeof(accelerations_t)
+//! Порог, ускорения ниже которого воспринимаются как сигнал о покое
+#define ACC_STILL_LIMIT_G				(2)
+//! Сколько измерений покоя после удара заблокируют буфер
+#define ACC_SAMPLES_STILL_AFTER_IMPACT	(10)
+//! Порог, ускорения выше которого будут считаться сигналом об ударе
+#define ACC_IMPACT_LIMIT_G 				(3)
+//! Перевод ускорений из G в попугаи акселерометра
+#define ACC_G_TO_PARROTS(G) 			((int)(G/0.050))
+//! Размер буфера хранимых ускорений (В элементах)
+#define ACC_BUFFER_SIZE 1000
+
+#define ACC_TASK_TIMER_PRIO (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 2)
 
 #endif /* GR_CONFIG_H_ */

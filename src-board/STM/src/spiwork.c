@@ -7,72 +7,78 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "ringbuf.h"
-#include "adxl_buffer.h"
-
-#include "../common/comm_def.h"
-#include "globals.h"
-
 #include "stm32f10x_conf.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 
-TaskHandle_t spi_task_handle;
+#include "../common/comm_def.h"
 
-//Индексы для вычитки ускорений из буфера
-static uint32_t _acc_low, _acc_high, _acc_now;
-static uint8_t _acc_params_shift;
+#include "accbuf.h"
+#include "ringbuf.h"
+#include "led.h"
 
-//Индекс для передачи
-static uint8_t _transiever_index = 0;
+#include "spiwork.h"
+
+spi_task_state_t spi_task_state;
+
+static TaskHandle_t _task_handle;
+
+static const uint8_t * _tx_ptr = NULL;
+static const uint8_t * _tx_ptr_limit = NULL;
+
+static uint8_t * _rx_ptr = NULL;
+static const uint8_t * _rx_ptr_limit = NULL;
+
+// Параметры запроса на передачу ускорений
+static gr_stm_accbuf_values_request _acc_values_request;
 
 //Копия статуса для отправки
-static gr_status_stm_t _status;
+static gr_stm_state_t _my_state;
+
+// копия глоабльного статуса для приёма
+static gr_status_t _tmp_global_state;
 
 static void _receive();
 static void _transmit();
 
+
 static enum {
 	RECEIVER_IDLE,
 	RECEIVER_AMRQ,
-	RECEIVEING_STATUS,
-	RECEIVEING_ACC_PARAMS
+	RECEIVER_STATUS,
+	RECEIVER_ACC_REQUEST
 } receiver_state;
+
 
 static enum {
 	TRANSMITTER_IDLE,
-	TRANSMITTING_SELFSTATUS,
-	TRANSMITTING_ACC,
+	TRANSMITTER_SELFSTATUS,
+	TRANSMITTER_ACC_VALUES,
 } transmitter_state;
+
 
 static uint16_t _data_lastRx = 0;
 
+
 void SPI2_IRQHandler() {
 	BaseType_t switchContext;
-
-	led_set(true);
-
-	_data_lastRx = SPI_I2S_ReceiveData(SPI2);
-
-	vTaskNotifyGiveFromISR(spi_task_handle, &switchContext);
-
+	_data_lastRx = SPI2->DR;
+	vTaskNotifyGiveFromISR(_task_handle, &switchContext);
 	portEND_SWITCHING_ISR(switchContext);
 }
 
+
 void EXTI15_10_IRQHandler() { //CS change handling
 	receiver_state = RECEIVER_AMRQ;
+	transmitter_state = TRANSMITTER_IDLE;
 	//Сбрасываем флаг прерывания
-	EXTI_ClearITPendingBit(EXTI_Line12);
+	EXTI->PR = EXTI_Line12; //EXTI_ClearITPendingBit(EXTI_Line12);
 }
 
-void  spiwork_init() {
 
-	//Инициализируем указатели на структуры статуса
-	gr_status_p = &gr_status0;
-	gr_status_p_tmp = &gr_status1;
-
+void spiwork_init() {
 	//Клокаем всё, что только можно!
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
@@ -94,7 +100,6 @@ void  spiwork_init() {
 
 	//GPIO для SPI
 	GPIO_InitTypeDef portInit;
-
 	portInit.GPIO_Speed = GPIO_Speed_50MHz;
 	portInit.GPIO_Mode = GPIO_Mode_AF_PP;
 	portInit.GPIO_Pin = GPIO_Pin_14; //MISO
@@ -106,33 +111,21 @@ void  spiwork_init() {
 
 	//Настройка прерываний SPI
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
-
 	NVIC_SetPriority(SPI2_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
-
 	NVIC_EnableIRQ(SPI2_IRQn);
 
 	//Настройка прерываний EXTI (CS)
 	EXTI_InitTypeDef exti;
-
 	EXTI_StructInit(&exti);
-
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource12);
-
 	exti.EXTI_Line = EXTI_Line12;
 	exti.EXTI_LineCmd = ENABLE;
 	exti.EXTI_Mode = EXTI_Mode_Interrupt;
 	exti.EXTI_Trigger = EXTI_Trigger_Falling;
-
 	EXTI_Init(&exti);
 
 	NVIC_SetPriority(EXTI15_10_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
-
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
-
-
-	NVIC_EnableIRQ(SPI2_IRQn);
-	NVIC_EnableIRQ(EXTI15_10_IRQn);
-
 
 	//Активируем модуль SPI
 	SPI_Cmd(SPI2, ENABLE);
@@ -142,135 +135,119 @@ void  spiwork_init() {
 	_transmit();
 }
 
-static void _receive() {
-	uint16_t data = _data_lastRx;
-	switch(receiver_state) {
 
+inline static void _receive() {
+	uint16_t data = _data_lastRx;
+
+	if ((receiver_state != RECEIVER_AMRQ && receiver_state != RECEIVER_IDLE)
+			&& _rx_ptr != _rx_ptr_limit)
+	{
+		*_rx_ptr = data;
+		_rx_ptr++;
+	}
+
+	switch(receiver_state)
+	{
 	case RECEIVER_AMRQ:
 
 		switch(data) {
-
 		case AMRQ_STATUS_Rx:
-			receiver_state = RECEIVEING_STATUS;
-			break;
+			receiver_state = RECEIVER_STATUS;
 
-		case AMRQ_ACC_DATA:
-			receiver_state = RECEIVEING_ACC_PARAMS;
-			_acc_high = 0;
-			_acc_params_shift = 0;
+			_rx_ptr = (uint8_t*)&_tmp_global_state;
+			_rx_ptr_limit = _rx_ptr + sizeof(_tmp_global_state);
+
 			break;
 
 		case AMRQ_SELFSTATUS_Tx:
-			_transiever_index = 0;
-
-			transmitter_state = TRANSMITTING_SELFSTATUS;
+			receiver_state = RECEIVER_IDLE;
+			transmitter_state = TRANSMITTER_SELFSTATUS;
 
 			taskENTER_CRITICAL();
-			_status = selfStatus;
+			_my_state.acc_state = acc_state;
+			// TODO: GPS состояние тоже
 			taskEXIT_CRITICAL();
+
+			_tx_ptr = (uint8_t*)&_my_state;
+			_tx_ptr_limit = _tx_ptr + sizeof(_my_state);
 
 			break;
 
-		default: break;
+		case AMRQ_ACC_DATA:
+			receiver_state = RECEIVER_ACC_REQUEST;
 
+			_rx_ptr = (uint8_t*)&_acc_values_request;
+			_rx_ptr_limit = _rx_ptr + sizeof(_acc_values_request);
+
+			break;
+		default:
+			break;
 		}
 		break;
 
-	case RECEIVEING_STATUS:
-		*( ( (uint8_t *) gr_status_p_tmp) + _transiever_index ) = (uint8_t)data & 0xFF;
-		_transiever_index++;
-
-		if(_transiever_index == sizeof(gr_status_t) ) {
-			//Обмениваем указатели
-			gr_status_t * tmp = gr_status_p;
-			gr_status_p = gr_status_p_tmp;
-			gr_status_p_tmp = tmp;
-
-			adxlbuf_start_listen(gr_status_p);
-
-			_transiever_index = 0;
+	case RECEIVER_STATUS:
+		if (_rx_ptr == _rx_ptr_limit)
+		{
+			// Применяем полученный статус
+			taskENTER_CRITICAL();
+			spi_task_state.global_status = _tmp_global_state;
+			taskEXIT_CRITICAL();
 			receiver_state = RECEIVER_IDLE;
 		}
 		break;
 
-	case RECEIVEING_ACC_PARAMS:
-		if(_acc_params_shift < 32) {
-			_acc_low |= (uint32_t) (data << _acc_params_shift);
-		}
+	case RECEIVER_ACC_REQUEST:
+		if (_rx_ptr == _rx_ptr_limit)
+		{
+			receiver_state = RECEIVER_IDLE;
+			transmitter_state = TRANSMITTER_ACC_VALUES;
 
-		else {
-			if(_acc_params_shift < 64) {
-				_acc_high |= (uint32_t) (data << (_acc_params_shift - 32));
+			_tx_ptr = (uint8_t*)&accbuf_buffer[_acc_values_request.offset];
+			_tx_ptr_limit = _tx_ptr + _acc_values_request.size * sizeof(accbuf_buffer[0]);
+			if (
+				(_tx_ptr >= (uint8_t*)accbuf_buffer + sizeof(accbuf_buffer))
+			||  (_tx_ptr_limit > (uint8_t*)accbuf_buffer + sizeof(accbuf_buffer))
+			)
+			{
+				abort();
 			}
 		}
-
-		_acc_params_shift += (uint8_t) 8;
-
-		if (_acc_params_shift == 64){
-			_acc_now = _acc_low;
-			_acc_params_shift = 0;
-			_transiever_index = 0;
-			receiver_state = RECEIVER_IDLE;
-			transmitter_state = TRANSMITTING_ACC;
-		}
 		break;
 
-	default: break;
-	}
-}
-
-static void _transmit() {
-	uint16_t data = 0xFF;
-
-	accelerations_t acceleration;
-
-	switch(transmitter_state) {
-
-	case TRANSMITTING_ACC:
-		adxlbuf_see_from_tail(_acc_now, &acceleration);
-
-		data = ((uint8_t *) &acceleration) [_transiever_index];
-		_transiever_index++;
-
-		if(_transiever_index == sizeof(accelerations_t)) {
-			_transiever_index = 0;
-			_acc_now++;
-		}
-
-		if(_acc_now == (_acc_high + 1)) {
-			_transiever_index = 0;
-			transmitter_state = TRANSMITTER_IDLE;
-		}
-
-		break;
-
-	case TRANSMITTING_SELFSTATUS:
-		data = ((uint8_t *) &_status ) [_transiever_index];
-		_transiever_index++;
-
-		if(_transiever_index == sizeof(selfStatus)){
-			_transiever_index = 0;
-			transmitter_state = TRANSMITTER_IDLE;
-		}
-		break;
-
-	case TRANSMITTER_IDLE:
 	default:
 		break;
 	}
-
-	SPI_I2S_SendData(SPI2, data);
 }
+
+
+inline static void _transmit() {
+	uint16_t data = 0xFF;
+
+	if ((transmitter_state != TRANSMITTER_IDLE))
+	{
+		if ((_tx_ptr != _tx_ptr_limit))
+		{
+			data = *_tx_ptr;
+			_tx_ptr++;
+		}
+		else
+		{
+			transmitter_state = TRANSMITTER_IDLE;
+		}
+	}
+
+	SPI2->DR = data;
+}
+
 
 void spi_task(void * args) {
 	(void) args;
 
+	_task_handle = xTaskGetCurrentTaskHandle();
 	spiwork_init();
 
 	while(1){
 		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
-
-		led_set(false);
 
 		taskENTER_CRITICAL();
 		_receive();

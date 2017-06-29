@@ -9,33 +9,13 @@
 #include <stdlib.h>
 #include "diag/Trace.h"
 
-#include "adxl_buffer.h"
-#include "adxl_service.h"
+#include "accbuf.h"
 #include "spiwork.h"
 #include "gps_nmea.h"
 
 #include "comm_def.h"
-#include "globals.h"
 
-// ----------------------------------------------------------------------------
-//
-// STM32F1 empty sample (trace via DEBUG).
-//
-// Trace support is enabled by adding the TRACE macro definition.
-// By default the trace messages are forwarded to the DEBUG output,
-// but can be rerouted to any device or completely suppressed, by
-// changing the definitions required in system/src/diag/trace_impl.c
-// (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
-//
-
-// ----- main() ---------------------------------------------------------------
-
-// Sample pragmas to cope with warnings. Please note the related line at
-// the end of this function, used to pop the compiler diagnostics status.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wmissing-declarations"
-#pragma GCC diagnostic ignored "-Wreturn-type"
+#include "accbuf.h"
 
 #include <FreeRTOS.h>
 #include <task.h>
@@ -58,8 +38,8 @@ static StaticTask_t spi_task_ob;
 int main(int argc, char* argv[]) {
 	led_init();
 	//xTaskCreateStatic(gps_task, "GPS", GPS_STACK_SIZE, NULL, 0, gps_task_stack, &gps_task_ob);
-	adxl_task_handle = xTaskCreateStatic(adxl_task, "ADXL", ADXL_STACK_SIZE, NULL, 0, adxl_task_stack, &adxl_task_ob);
-	spi_task_handle = xTaskCreateStatic(spi_task, "SPI", SPI_STACK_SIZE, NULL, 0, spi_task_stack, &spi_task_ob);
+	xTaskCreateStatic(accbuf_task_entry, "ADXL", ADXL_STACK_SIZE, NULL, 0, adxl_task_stack, &adxl_task_ob);
+	xTaskCreateStatic(spi_task, "SPI", SPI_STACK_SIZE, NULL, 0, spi_task_stack, &spi_task_ob);
 
 	__enable_irq();
 
