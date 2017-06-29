@@ -1,221 +1,148 @@
 /* */
 
-#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 #include <stm32f10x_conf.h>
-
-#include <minmea.h>
-
-#include "ringbuf.h"
-
-#include "gps_nmea.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
-typedef enum
+#include <minmea.h>
+
+#include "gps_nmea.h"
+
+gr_stm_gps_state_t gps_state;
+
+static size_t _dma_carret;
+static char _dma_buffer[GPS_DMA_BUFFER_SIZE];
+
+static size_t _msg_carret;
+static char _msg_buffer[GPS_MSG_BUFFER_SIZE];
+
+
+static void _init_hw(void)
 {
-	GPS_STATE_IDLE, 		// ждем доллара
-	GPS_STATE_ACCUMULATE,	// накапливаем символы
-} state_t;
-
-
-#pragma pack(push, 1)
-struct rscs_gps_t
-{
-	USART_TypeDef * uart;
-	state_t state;
-	char buffer[100];
-	size_t buffer_carret;
-};
-#pragma pack(pop)
-
-rscs_ringbuf_t * gps_buf;
-
-void USART2_IRQHandler() {
-	USART_ClearITPendingBit(USART2, USART_IT_RXNE);
-	rscs_ringbuf_push(gps_buf, USART_ReceiveData(USART2));
-}
-
-static rscs_gps_t _descr;
-
-rscs_gps_t * rscs_gps_init(USART_TypeDef * uartId)
-{
-	gps_buf = rscs_ringbuf_init(200);
-
-	_descr.uart = uartId;
-	_descr.buffer_carret = 0;
-	_descr.state = GPS_STATE_IDLE;
-
-	// настройка UART
-
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-
-	GPIO_InitTypeDef portInit;
-
-	portInit.GPIO_Speed = GPIO_Speed_50MHz;
-	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	portInit.GPIO_Pin = GPIO_Pin_3; //RX
-	GPIO_Init(GPIOA, &portInit);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
 
-	USART_InitTypeDef uartInit;
-	uartInit.USART_BaudRate = 9600;
-	uartInit.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	uartInit.USART_Mode = USART_Mode_Rx;
-	uartInit.USART_Parity = USART_Parity_No;
-	uartInit.USART_StopBits = USART_StopBits_1;
-	uartInit.USART_WordLength = USART_WordLength_8b;
-
-	USART_Init(_descr.uart, &uartInit);
-
-	USART_Cmd(USART2, ENABLE);
-
-	NVIC_InitTypeDef nvic;
-	nvic.NVIC_IRQChannel = USART2_IRQn;
-	nvic.NVIC_IRQChannelCmd = ENABLE;
-	nvic.NVIC_IRQChannelPreemptionPriority = configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1;
-	nvic.NVIC_IRQChannelSubPriority = 0;
-	NVIC_Init(&nvic);
-
-	NVIC_EnableIRQ(USART2_IRQn);
-
-	USART_ITConfig(_descr.uart, USART_IT_RXNE, ENABLE);
-
-	return &_descr;
-}
-
-
-void rscs_gps_deinit(rscs_gps_t * gps)
-{
-	USART_DeInit(gps->uart);
-}
-
-
-static bool _handle_message(const char * msg_signed, float * lon, float * lat,
-						    float * height, bool * hasFix)
-{
-	struct minmea_sentence_gga frame;
-	if( !minmea_parse_gga(&frame, msg_signed)) return false;
-
-	float _lon = minmea_tofloat(&frame.longitude);
-	float _lat = minmea_tofloat(&frame.latitude);
-	float _height = minmea_tofloat(&frame.altitude);
-	bool _hasFix = frame.fix_quality != 0;
-
-	taskENTER_CRITICAL();
-
-	*lon = _lon;
-	*lat = _lat;
-	*height = _height;
-	*hasFix = _hasFix;
-
-	taskEXIT_CRITICAL();
-
-	return 1;
-}
-
-
-
-int rscs_uart_read_some(USART_TypeDef * uart, void * data, size_t count) {
-	(void) uart;
-	size_t i = 0;
-
-	for(i = 0; (i < count) && ( rscs_ringbuf_getsize(gps_buf) != 0); i++) {
-		rscs_ringbuf_pop(gps_buf, ((uint8_t *)data + i));
-	}
-	return i;
-}
-
-int rscs_gps_read(rscs_gps_t * gps, float * lon, float * lat,
-					 float * height, bool * hasFix)
-{
-	// нужно прочитать данные из связанного UART
-	// выкинуть все не нужное, найти нужное сообщение
-	// и выделить из него широту, долготу и высоту
-
-	char symbol;
-	size_t readed;
-
-again:
-	switch(gps->state)
 	{
-	case GPS_STATE_IDLE:
-		while(0 != (readed = rscs_uart_read_some(gps->uart, &symbol, 1)))
-		{
-			if ('$' == symbol)
-				break;
-		}
-
-		if (readed > 0 && '$' == symbol)
-		{
-			gps->state = GPS_STATE_ACCUMULATE;
-			gps->buffer[0] = symbol;
-			gps->buffer_carret = 1;
-		}
-		else
-			return -1;
-			/* no break */
-
-		// брейк опущен сознательно
-	case GPS_STATE_ACCUMULATE:
-		while(0 != (readed = rscs_uart_read_some(gps->uart, &symbol, 1)))
-		{
-			if ('$' == symbol)
-			{
-				gps->buffer[0] = symbol;
-				gps->buffer_carret = 1;
-				continue;
-			}
-
-			if (gps->buffer_carret >= sizeof(gps->buffer))
-			{
-				gps->state = GPS_STATE_IDLE;
-				goto again;
-			}
-
-			gps->buffer[gps->buffer_carret] = symbol;
-			gps->buffer_carret += readed;
-
-			if (gps->buffer_carret == 6 && memcmp(gps->buffer, "$GPGGA", 6) != 0)
-			{
-				gps->state = GPS_STATE_IDLE;
-				goto again;
-			}
-
-			if (gps->buffer_carret >= 2
-				&& '\n' == gps->buffer[gps->buffer_carret-1]
-			    && '\r' == gps->buffer[gps->buffer_carret-2])
-			{
-				if (_handle_message(gps->buffer, lon, lat, height, hasFix))
-				{
-					gps->state = GPS_STATE_IDLE;
-					return 0;
-				}
-				else
-				{
-					gps->state = GPS_STATE_IDLE;
-					goto again;
-				}
-			}
-		}
-		break;
+		GPIO_InitTypeDef portInit;
+		portInit.GPIO_Speed = GPIO_Speed_50MHz;
+		portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+		portInit.GPIO_Pin = GPIO_Pin_3; //RX
+		GPIO_Init(GPIOA, &portInit);
 	}
 
-	// если сообщения не нашлось, нужно вернуть RSCS_E_BUSY
-	return -1;
+	{
+		USART_InitTypeDef uartInit;
+		uartInit.USART_BaudRate = 9600;
+		uartInit.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+		uartInit.USART_Mode = USART_Mode_Rx;
+		uartInit.USART_Parity = USART_Parity_No;
+		uartInit.USART_StopBits = USART_StopBits_1;
+		uartInit.USART_WordLength = USART_WordLength_8b;
+		USART_Init(GPS_USART, &uartInit);
+	}
+
+	{
+		DMA_InitTypeDef dma_init;
+		DMA_StructInit(&dma_init);
+		dma_init.DMA_PeripheralBaseAddr = (uint32_t)&GPS_USART->DR;
+		dma_init.DMA_MemoryBaseAddr = (uint32_t)_dma_buffer;
+		dma_init.DMA_DIR = DMA_DIR_PeripheralSRC;
+		dma_init.DMA_BufferSize = GPS_DMA_BUFFER_SIZE;
+		dma_init.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+		dma_init.DMA_MemoryInc = DMA_MemoryInc_Enable;
+		dma_init.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+		dma_init.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+		dma_init.DMA_Mode = DMA_Mode_Circular;
+		dma_init.DMA_Priority = DMA_Priority_Medium;
+		dma_init.DMA_M2M = DMA_M2M_Disable;
+		DMA_Init(GPS_DMA_USART_CHANNEL, &dma_init);
+
+		DMA_Cmd(GPS_DMA_USART_CHANNEL, ENABLE);
+	}
+
+	USART_DMACmd(GPS_USART, USART_DMAReq_Rx, ENABLE);
+
+	USART_Cmd(GPS_USART, ENABLE);
 }
 
-void gps_task(void * args) {
+
+
+char _read_dma_buffer(void)
+{
+	// ждем, пока ДМА чего-нибудь скачает
+	while(_dma_carret == DMA_GetCurrDataCounter(GPS_DMA_USART_CHANNEL)) {}
+
+	char retval = _dma_buffer[_dma_carret];
+
+	_dma_carret++;
+	if (_dma_carret >= GPS_DMA_BUFFER_SIZE)
+		_dma_carret = 0;
+
+	return retval;
+}
+
+
+
+void gps_task(void * args)
+{
 	(void) args;
 
-	gr_gps = rscs_gps_init(USART2);
+	_dma_carret = 0;
+	_msg_carret = 0;
 
-	while(1) {
-		rscs_gps_read(gr_gps, &(selfStatus.lon), &(selfStatus.lat), &(selfStatus.alt), &(selfStatus.hasFix));
+	_init_hw();
+
+	for ( ; ; )
+	{
+		// ждем доллара
+		do {
+			_msg_buffer[0] = _read_dma_buffer();
+		} while (_msg_buffer[0] != '$');
+
+		_msg_carret = 0;
+		// Оп! нашли, накапливаем первые шесть символов
+		while(_msg_carret < 6)
+			_msg_buffer[_msg_carret++] = _read_dma_buffer();
+
+		// проверяем, это наш GGA?
+		if (memcmp(_msg_buffer, "$GPGGA", 6) != 0)
+			continue; // нет.. ну ладно
+
+		// теперь накапливаем все до \r\n
+		do {
+			_msg_buffer[_msg_carret++] = _read_dma_buffer();
+		} while('\n' != _msg_buffer[_msg_carret-1]
+			||	'\r' != _msg_buffer[_msg_carret-2]
+		);
+
+		// в конце терминируем строку от греха подальше
+		_msg_buffer[_msg_carret] = '\x00';
+
+		// накопили, теперь разбираем
+		struct minmea_sentence_gga frame;
+		if (!minmea_parse_gga(&frame, _msg_buffer))
+			continue; // опс, что-то пошло не так
+
+		float _lon = minmea_tofloat(&frame.longitude);
+		float _lat = minmea_tofloat(&frame.latitude);
+		float _height = minmea_tofloat(&frame.altitude);
+		bool _hasFix = frame.fix_quality != 0;
+
+		taskENTER_CRITICAL();
+		gps_state.lon = _lon;
+		gps_state.lat = _lat;
+		gps_state.height = _height;
+		gps_state.has_fix = _hasFix;
+		taskEXIT_CRITICAL();
 	}
 }
+

@@ -147,6 +147,13 @@ typedef struct
 } gr_stm_acc_state_t;
 
 
+typedef struct
+{
+	float lon, lat, height;
+	bool has_fix;
+} gr_stm_gps_state_t;
+
+
 typedef struct {
 	gr_stm_acc_state_t acc_state;
 	// FIXME: Статус GPS
