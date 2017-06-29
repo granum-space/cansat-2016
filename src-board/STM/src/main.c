@@ -39,8 +39,8 @@ int main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
 	led_init();
 	xTaskCreateStatic(gps_task, "GPS", GPS_STACK_SIZE, NULL, 0, gps_task_stack, &gps_task_ob);
-	xTaskCreateStatic(accbuf_task_entry, "ADXL", ADXL_STACK_SIZE, NULL, 0, adxl_task_stack, &adxl_task_ob);
-	xTaskCreateStatic(spi_task, "SPI", SPI_STACK_SIZE, NULL, 0, spi_task_stack, &spi_task_ob);
+	xTaskCreateStatic(accbuf_task_entry, "ADXL", ADXL_STACK_SIZE, NULL, configMAX_PRIORITIES-2, adxl_task_stack, &adxl_task_ob);
+	xTaskCreateStatic(spi_task, "SPI", SPI_STACK_SIZE, NULL, configMAX_PRIORITIES-1, spi_task_stack, &spi_task_ob);
 
 	vTaskStartScheduler();
 	return 0;

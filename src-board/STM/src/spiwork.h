@@ -8,13 +8,12 @@
 #ifndef SPIWORK_H_
 #define SPIWORK_H_
 
-#include "comm_def.h"
+#include "gr_config.h"
 
 typedef struct
 {
 	gr_status_t global_status; // общий статус систмы, получаемый от атмеги
 } spi_task_state_t;
-
 
 
 void spi_task(void * args);

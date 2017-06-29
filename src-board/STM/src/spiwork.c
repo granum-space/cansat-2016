@@ -16,7 +16,7 @@
 #include "../common/comm_def.h"
 
 #include "accbuf.h"
-#include "ringbuf.h"
+#include "gps_nmea.h"
 #include "led.h"
 
 #include "spiwork.h"
@@ -52,13 +52,6 @@ static enum {
 } receiver_state;
 
 
-static enum {
-	TRANSMITTER_IDLE,
-	TRANSMITTER_SELFSTATUS,
-	TRANSMITTER_ACC_VALUES,
-} transmitter_state;
-
-
 static uint16_t _data_lastRx = 0;
 
 
@@ -72,7 +65,7 @@ void SPI2_IRQHandler() {
 
 void EXTI15_10_IRQHandler() { //CS change handling
 	receiver_state = RECEIVER_AMRQ;
-	transmitter_state = TRANSMITTER_IDLE;
+	_tx_ptr = _tx_ptr_limit = NULL;
 	//Сбрасываем флаг прерывания
 	EXTI->PR = EXTI_Line12; //EXTI_ClearITPendingBit(EXTI_Line12);
 }
@@ -111,7 +104,7 @@ void spiwork_init() {
 
 	//Настройка прерываний SPI
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
-	NVIC_SetPriority(SPI2_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+	NVIC_SetPriority(SPI2_IRQn, SPI_INTERRUPT_PRIO);
 	NVIC_EnableIRQ(SPI2_IRQn);
 
 	//Настройка прерываний EXTI (CS)
@@ -124,7 +117,7 @@ void spiwork_init() {
 	exti.EXTI_Trigger = EXTI_Trigger_Falling;
 	EXTI_Init(&exti);
 
-	NVIC_SetPriority(EXTI15_10_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+	NVIC_SetPriority(EXTI15_10_IRQn, SPI_EXTI_INTERRUPT_PRIO);
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 	//Активируем модуль SPI
@@ -161,11 +154,10 @@ inline static void _receive() {
 
 		case AMRQ_SELFSTATUS_Tx:
 			receiver_state = RECEIVER_IDLE;
-			transmitter_state = TRANSMITTER_SELFSTATUS;
 
 			taskENTER_CRITICAL();
 			_my_state.acc_state = acc_state;
-			// TODO: GPS состояние тоже
+			_my_state.gps_state = gps_state;
 			taskEXIT_CRITICAL();
 
 			_tx_ptr = (uint8_t*)&_my_state;
@@ -200,7 +192,6 @@ inline static void _receive() {
 		if (_rx_ptr == _rx_ptr_limit)
 		{
 			receiver_state = RECEIVER_IDLE;
-			transmitter_state = TRANSMITTER_ACC_VALUES;
 
 			_tx_ptr = (uint8_t*)&accbuf_buffer[_acc_values_request.offset];
 			_tx_ptr_limit = _tx_ptr + _acc_values_request.size * sizeof(accbuf_buffer[0]);
@@ -223,17 +214,10 @@ inline static void _receive() {
 inline static void _transmit() {
 	uint16_t data = 0xFF;
 
-	if ((transmitter_state != TRANSMITTER_IDLE))
+	if ((_tx_ptr != _tx_ptr_limit))
 	{
-		if ((_tx_ptr != _tx_ptr_limit))
-		{
-			data = *_tx_ptr;
-			_tx_ptr++;
-		}
-		else
-		{
-			transmitter_state = TRANSMITTER_IDLE;
-		}
+		data = *_tx_ptr;
+		_tx_ptr++;
 	}
 
 	SPI2->DR = data;
@@ -249,9 +233,7 @@ void spi_task(void * args) {
 	while(1){
 		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
 
-		taskENTER_CRITICAL();
 		_receive();
 		_transmit();
-		taskEXIT_CRITICAL();
 	}
 }

@@ -76,7 +76,7 @@ static void _init_hw(void)
 
 
 
-char _read_dma_buffer(void)
+inline char _read_dma_buffer(void)
 {
 	// ждем, пока ДМА чего-нибудь скачает
 	while(_dma_carret == DMA_GetCurrDataCounter(GPS_DMA_USART_CHANNEL)) {}
@@ -120,8 +120,8 @@ void gps_task(void * args)
 		// теперь накапливаем все до \r\n
 		do {
 			_msg_buffer[_msg_carret++] = _read_dma_buffer();
-		} while('\n' != _msg_buffer[_msg_carret-1]
-			||	'\r' != _msg_buffer[_msg_carret-2]
+		} while('\r' != _msg_buffer[_msg_carret-2]
+			||	'\n' != _msg_buffer[_msg_carret-1]
 		);
 
 		// в конце терминируем строку от греха подальше

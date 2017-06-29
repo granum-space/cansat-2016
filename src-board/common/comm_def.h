@@ -156,7 +156,7 @@ typedef struct
 
 typedef struct {
 	gr_stm_acc_state_t acc_state;
-	// FIXME: Статус GPS
+	gr_stm_gps_state_t gps_state;
 } gr_stm_state_t;
 
 

@@ -5,7 +5,10 @@
 
 #include "gr_config.h"
 #include "adxl375.h"
+#include "spiwork.h"
+
 #include "accbuf.h"
+
 
 gr_stm_acc_state_t acc_state;
 accelerations_t accbuf_buffer[ACC_BUFFER_SIZE];
@@ -149,10 +152,22 @@ void accbuf_task_entry(void * args) {
 	while(1) {
 		ulTaskNotifyTake(pdFALSE, 0);
 
-		if (ACC_STATUS_LOCKED == acc_state.accbuf_status)
+		taskENTER_CRITICAL();
+		const int global_status = spi_task_state.global_status.mode;
+		const gr_stm_accbuf_status_t self_status = acc_state.accbuf_status;
+		taskEXIT_CRITICAL();
+
+		if (ACC_STATUS_LOCKED == self_status)
+		{
 			vTaskDelete(NULL);
+			return;
+		}
+
+		if (global_status >= GR_MODE_LANDING && self_status < ACC_STATUS_ACTIVE)
+			accbuf_start_listen();
 
 		accbuf_update(&acc_tmp);
+
 		taskENTER_CRITICAL();
 		acc_state.current_acc = acc_tmp;
 		taskEXIT_CRITICAL();
