@@ -69,10 +69,11 @@ void gr_nextMode(void) {
 
 	case GR_MODE_LANDING:
 		GR_FUSE_OFF
+		gr_servo_set(0);
 		break;
 
 	case GR_MODE_ONGROUND:
-		gr_servo_set(90);
+		gr_servo_set(0);
 		for(int i = 0; i < 3; i++) stm32_getAccelerations();
 		break;
 
@@ -106,7 +107,11 @@ int main() {
 
 	GR_JMP_INIT
 
-	while(GR_JMP_INACT_VAL); //Если поставили джампер неактивности, то ничего не делаем
+	if(GR_JMP_INACT_VAL) {
+		gr_servo_init();
+		gr_servo_set(0);
+		while(GR_JMP_INACT_VAL); //Если поставили джампер неактивности, то ничего не делаем
+	}
 
 	DDRG |= (1 << 3);
 
@@ -237,6 +242,8 @@ static void init() {
 	rscs_i2c_init();
 
 	sens_init();
+
+	gr_servo_init();
 
 	GR_FUSE_INIT
 }

@@ -69,7 +69,7 @@
 #define GR_DUMP_FFS_SYNC_PERIOD 0
 
 //Настройки UART
-#define GR_UART_ID RSCS_UART_ID_UART1
+#define GR_UART_ID RSCS_UART_ID_UART0
 
 //Макросы управления CS к STM32
 #define GR_STM_SELECT PORTB &= ~(1 << 6);
@@ -95,13 +95,18 @@
 #define GR_FUSE_OFF PORTC &= ~(1 << 2);
 
 //Настройки модуля сервы
-#define GR_SERVO_MAX_VALUE 2400
-#define GR_SERVO_MIN_VALUE 650
-#define GR_SERVO_START_VALUE GR_SERVO_MIN_VALUE
+#define GR_SERVO_MAX_VALUE 1600
+#define GR_SERVO_MIN_VALUE 700
+#define GR_SERVO_START_VALUE GR_SERVO_MAX_VALUE
 
 //Время для раскрытия парашюта
 #define GR_PARACHUTE_TIME_MS 2000
 
 //Время минимального прожига
 #define GR_PENETRATORS_MIN_EXIT_TIME_MS 1500
+
+//Настройки SPI для STM32
+#define GR_STM_SPI_FREQ_kHz 300
+#define GR_STM_SPI_PAUSE_uS 200 //Пауза между байтами
+
 #endif /* GRANUM_CONFIG_H_ */

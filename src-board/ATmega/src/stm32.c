@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#include <util/delay.h>
+
 #include "granum_config.h"
 #include "comm_def.h"
 #include "granum_globals.h"
@@ -9,41 +11,69 @@
 
 #include "dump.h"
 
+uint8_t _spi_do_delay(uint8_t value)
+{
+	uint8_t retval = rscs_spi_do(value);
+
+	_delay_us(GR_STM_SPI_PAUSE_uS);
+
+	return retval;
+}
+
+void _spi_read_delay(void * read_buffer, size_t buffer_size, uint8_t dummy)
+{
+	for (size_t i = 0; i < buffer_size; i++) {
+		((uint8_t*)read_buffer)[i] = _spi_do_delay(dummy);
+	}
+}
+
+
+void _spi_write_delay(const void * write_buffer, size_t buffer_size)
+{
+	for (size_t i = 0; i < buffer_size; i++) {
+		_spi_do_delay(((const uint8_t*)write_buffer)[i]);
+	}
+}
+
 void stm32_initExchange() {
 	GR_STM_INIT_CS;
 }
 
 void stm32_updateSTMStatus(){
+	rscs_spi_set_clk(GR_STM_SPI_FREQ_kHz);
 	GR_STM_SELECT
 
-	rscs_spi_do(AMRQ_SELFSTATUS_Tx);
+	_spi_do_delay(AMRQ_SELFSTATUS_Tx);
 
-	rscs_spi_read(&gr_status_stm, sizeof(gr_status_stm), 0xff);
+	_spi_read_delay(&gr_status_stm, sizeof(gr_status_stm), 0xff);
 
 	GR_STM_UNSELECT
 }
 
 void stm32_transmitSystemStatus() {
+	rscs_spi_set_clk(GR_STM_SPI_FREQ_kHz);
 	GR_STM_SELECT
 
-	rscs_spi_do(AMRQ_STATUS_Rx);
+	_spi_do_delay(AMRQ_STATUS_Rx);
 
-	rscs_spi_write(&gr_status, sizeof(gr_status));
+	_spi_write_delay(&gr_status, sizeof(gr_status));
 
 	GR_STM_UNSELECT
 }
 
 void stm32_getAccelerations() {
+	rscs_spi_set_clk(GR_STM_SPI_FREQ_kHz);
+
 	int step = 100;
 	gr_telemetry_adxl375_t * packet = malloc( sizeof(gr_telemetry_adxl375_t) + step * sizeof(accelerations_t) );
 	for(uint32_t i = 0; i <= GR_STM_ACCBUF_SIZE; i += step + 1) {
 		GR_STM_SELECT
 
-		rscs_spi_do(AMRQ_ACC_DATA);
-		rscs_spi_do(i);
-		rscs_spi_do(i + step);
+		_spi_do_delay(AMRQ_ACC_DATA);
+		_spi_do_delay(i);
+		_spi_do_delay(i + step);
 
-		rscs_spi_read(packet->data, step, 0xFF);
+		_spi_read_delay(packet->data, step, 0xFF);
 
 		GR_STM_UNSELECT
 

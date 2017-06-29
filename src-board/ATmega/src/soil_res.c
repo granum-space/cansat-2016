@@ -88,6 +88,8 @@ void rscs_soil_res_init()
 
 void rscs_digipot_set_res(uint32_t resistance)
 {
+	rscs_spi_set_clk(1000);
+
 	// если сопротивление < 100кОм, то обойдемся одним встроенным реостатом
 	if (resistance < 100000) {
 		digipot_start();
@@ -120,6 +122,8 @@ void rscs_digipot_set_res(uint32_t resistance)
 
 rscs_e rscs_get_soil_res(soilresist_data_t*soilresist_data, uint8_t precision)
 {
+	rscs_spi_set_clk(1000);
+
 	rscs_e error;
 
 	for (int j = 0; j < 3; j++)

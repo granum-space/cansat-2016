@@ -89,9 +89,9 @@
 // Настройки модуля SD - модуля работы с SD картами
 // ========================================================
 // Частота SPI модуля SD карты, которую он устанавливает при вызове rscs_sd_spi_setup
-#define RSCS_SDCARD_SPI_CLK_SLOW (20)
+#define RSCS_SDCARD_SPI_CLK_SLOW (100)
 // Частота SPI модуля SD карты, которую он устанавливает при вызове rscs_sd_spi_setup_slow
-#define RSCS_SDCARD_SPI_CLK_FAST (100)
+#define RSCS_SDCARD_SPI_CLK_FAST (400)
 
 
 
