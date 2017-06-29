@@ -76,7 +76,7 @@ static void _init_hw(void)
 
 
 
-inline char _read_dma_buffer(void)
+inline static char _read_dma_buffer(void)
 {
 	// ждем, пока ДМА чего-нибудь скачает
 	while(_dma_carret == DMA_GetCurrDataCounter(GPS_DMA_USART_CHANNEL)) {}
