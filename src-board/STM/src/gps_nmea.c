@@ -79,7 +79,7 @@ static void _init_hw(void)
 inline static char _read_dma_buffer(void)
 {
 	// ждем, пока ДМА чего-нибудь скачает
-	while(_dma_carret == DMA_GetCurrDataCounter(GPS_DMA_USART_CHANNEL)) {}
+	while(_dma_carret == (size_t)(GPS_DMA_BUFFER_SIZE - GPS_DMA_USART_CHANNEL->CNDTR)) {}
 
 	char retval = _dma_buffer[_dma_carret];
 

@@ -180,32 +180,35 @@ static void hw_init()
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
-	SPI_InitTypeDef spiconf;
-	spiconf.SPI_CRCPolynomial = 7; // Отключено (так Василий сказал)
-	spiconf.SPI_DataSize = SPI_DataSize_8b;
-	spiconf.SPI_NSS = SPI_NSS_Soft;
-	spiconf.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-	spiconf.SPI_FirstBit = SPI_FirstBit_MSB;
-	spiconf.SPI_Mode = SPI_Mode_Master;
-	spiconf.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
-	spiconf.SPI_CPHA = SPI_CPHA_2Edge;
-	spiconf.SPI_CPOL = SPI_CPOL_High;
+	{
+		SPI_InitTypeDef spiconf;
+		spiconf.SPI_CRCPolynomial = 7; // Отключено (так Василий сказал)
+		spiconf.SPI_DataSize = SPI_DataSize_8b;
+		spiconf.SPI_NSS = SPI_NSS_Soft;
+		spiconf.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+		spiconf.SPI_FirstBit = SPI_FirstBit_MSB;
+		spiconf.SPI_Mode = SPI_Mode_Master;
+		spiconf.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
+		spiconf.SPI_CPHA = SPI_CPHA_2Edge;
+		spiconf.SPI_CPOL = SPI_CPOL_High;
+		SPI_Init(ADXL_SPI, &spiconf);
+	}
 
-	SPI_Init(ADXL_SPI, &spiconf);
+	{
+		GPIO_InitTypeDef portInit;
+		portInit.GPIO_Mode = GPIO_Mode_Out_PP;
+		portInit.GPIO_Speed = GPIO_Speed_50MHz;
+		portInit.GPIO_Pin = GPIO_Pin_4; //CS
+		GPIO_Init(GPIOA, &portInit);
 
-	GPIO_InitTypeDef portInit;
-	portInit.GPIO_Mode = GPIO_Mode_Out_PP;
-	portInit.GPIO_Speed = GPIO_Speed_50MHz;
-	portInit.GPIO_Pin = GPIO_Pin_4; //CS
-	GPIO_Init(GPIOA, &portInit);
+		portInit.GPIO_Mode = GPIO_Mode_AF_PP;
+		portInit.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7; //MOSI, SCLK
+		GPIO_Init(GPIOA, &portInit);
 
-	portInit.GPIO_Mode = GPIO_Mode_AF_PP;
-	portInit.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7; //MOSI, SCLK
-	GPIO_Init(GPIOA, &portInit);
-
-	portInit.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_3;// MISO, INT
-	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOA, &portInit);
+		portInit.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_3;// MISO, INT
+		portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+		GPIO_Init(GPIOA, &portInit);
+	}
 
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 	SPI_Cmd(ADXL_SPI, ENABLE);

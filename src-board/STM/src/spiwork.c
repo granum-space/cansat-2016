@@ -77,45 +77,50 @@ void spiwork_init() {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
-	//Настраиваем SPI
-	SPI_InitTypeDef spiconf;
-	spiconf.SPI_CRCPolynomial = 7; // Отключено (так Василий сказал)
-	spiconf.SPI_DataSize = SPI_DataSize_8b;
-	spiconf.SPI_NSS = SPI_NSS_Hard;
-	spiconf.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-	spiconf.SPI_FirstBit = SPI_FirstBit_MSB;
-	spiconf.SPI_Mode = SPI_Mode_Slave;
-	spiconf.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
-	spiconf.SPI_CPHA = SPI_CPHA_1Edge;
-	spiconf.SPI_CPOL = SPI_CPOL_Low;
+	{
+		//Настраиваем SPI
+		SPI_InitTypeDef spiconf;
+		spiconf.SPI_CRCPolynomial = 7; // Отключено (так Василий сказал)
+		spiconf.SPI_DataSize = SPI_DataSize_8b;
+		spiconf.SPI_NSS = SPI_NSS_Hard;
+		spiconf.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+		spiconf.SPI_FirstBit = SPI_FirstBit_MSB;
+		spiconf.SPI_Mode = SPI_Mode_Slave;
+		spiconf.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
+		spiconf.SPI_CPHA = SPI_CPHA_1Edge;
+		spiconf.SPI_CPOL = SPI_CPOL_Low;
+		SPI_Init(SPI2, &spiconf);
+	}
 
-	SPI_Init(SPI2, &spiconf);
+	{
+		//GPIO для SPI
+		GPIO_InitTypeDef portInit;
+		portInit.GPIO_Speed = GPIO_Speed_50MHz;
+		portInit.GPIO_Mode = GPIO_Mode_AF_PP;
+		portInit.GPIO_Pin = GPIO_Pin_14; //MISO
+		GPIO_Init(GPIOB, &portInit);
 
-	//GPIO для SPI
-	GPIO_InitTypeDef portInit;
-	portInit.GPIO_Speed = GPIO_Speed_50MHz;
-	portInit.GPIO_Mode = GPIO_Mode_AF_PP;
-	portInit.GPIO_Pin = GPIO_Pin_14; //MISO
-	GPIO_Init(GPIOB, &portInit);
-
-	portInit.GPIO_Pin = GPIO_Pin_15 | GPIO_Pin_13 | GPIO_Pin_12;// MOSI, SCLK, CS
-	portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOB, &portInit);
+		portInit.GPIO_Pin = GPIO_Pin_15 | GPIO_Pin_13 | GPIO_Pin_12;// MOSI, SCLK, CS
+		portInit.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+		GPIO_Init(GPIOB, &portInit);
+	}
 
 	//Настройка прерываний SPI
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
 	NVIC_SetPriority(SPI2_IRQn, SPI_INTERRUPT_PRIO);
 	NVIC_EnableIRQ(SPI2_IRQn);
 
-	//Настройка прерываний EXTI (CS)
-	EXTI_InitTypeDef exti;
-	EXTI_StructInit(&exti);
-	GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource12);
-	exti.EXTI_Line = EXTI_Line12;
-	exti.EXTI_LineCmd = ENABLE;
-	exti.EXTI_Mode = EXTI_Mode_Interrupt;
-	exti.EXTI_Trigger = EXTI_Trigger_Falling;
-	EXTI_Init(&exti);
+	{
+		//Настройка прерываний EXTI (CS)
+		EXTI_InitTypeDef exti;
+		EXTI_StructInit(&exti);
+		GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource12);
+		exti.EXTI_Line = EXTI_Line12;
+		exti.EXTI_LineCmd = ENABLE;
+		exti.EXTI_Mode = EXTI_Mode_Interrupt;
+		exti.EXTI_Trigger = EXTI_Trigger_Falling;
+		EXTI_Init(&exti);
+	}
 
 	NVIC_SetPriority(EXTI15_10_IRQn, SPI_EXTI_INTERRUPT_PRIO);
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
