@@ -23,7 +23,7 @@
 
 #include "led.h"
 
-#define GPS_STACK_SIZE 4*configMINIMAL_STACK_SIZE
+#define GPS_STACK_SIZE 8*configMINIMAL_STACK_SIZE
 static StackType_t gps_task_stack[GPS_STACK_SIZE];
 static StaticTask_t gps_task_ob;
 
@@ -38,9 +38,9 @@ static StaticTask_t spi_task_ob;
 int main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
 	led_init();
-	xTaskCreateStatic(gps_task, "GPS", GPS_STACK_SIZE, NULL, 0, gps_task_stack, &gps_task_ob);
-	xTaskCreateStatic(accbuf_task_entry, "ADXL", ADXL_STACK_SIZE, NULL, configMAX_PRIORITIES-2, adxl_task_stack, &adxl_task_ob);
-	xTaskCreateStatic(spi_task, "SPI", SPI_STACK_SIZE, NULL, configMAX_PRIORITIES-1, spi_task_stack, &spi_task_ob);
+	xTaskCreateStatic(gps_task, "GPS", GPS_STACK_SIZE, NULL, 1, gps_task_stack, &gps_task_ob);
+	xTaskCreateStatic(accbuf_task_entry, "ADXL", ADXL_STACK_SIZE, NULL, 2, adxl_task_stack, &adxl_task_ob);
+	xTaskCreateStatic(spi_task, "SPI", SPI_STACK_SIZE, NULL, 3, spi_task_stack, &spi_task_ob);
 
 	vTaskStartScheduler();
 	return 0;

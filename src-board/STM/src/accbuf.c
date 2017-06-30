@@ -6,6 +6,7 @@
 #include "gr_config.h"
 #include "adxl375.h"
 #include "spiwork.h"
+#include "led.h"
 
 #include "accbuf.h"
 
@@ -118,6 +119,7 @@ void accbuf_start_listen(void)
 
 
 void TIM2_IRQHandler(void){
+	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	BaseType_t switchContext;
 	vTaskNotifyGiveFromISR(_task_handle, &switchContext);
 	portEND_SWITCHING_ISR(switchContext);
@@ -137,20 +139,20 @@ void accbuf_task_entry(void * args) {
 	TIM_TimeBaseStructInit(&tim_init);
 	tim_init.TIM_ClockDivision = TIM_CKD_DIV1;
 	tim_init.TIM_CounterMode = TIM_CounterMode_Up;
-	tim_init.TIM_Period = 1000;
-	tim_init.TIM_Prescaler = 72;
+	tim_init.TIM_Period = 110;
+	tim_init.TIM_Prescaler = 72-1;
 	TIM_TimeBaseInit(TIM2, &tim_init);
 
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 	NVIC_SetPriority(TIM2_IRQn, ACC_TASK_TIMER_PRIO);
-	NVIC_EnableIRQ(SPI2_IRQn);
+	NVIC_EnableIRQ(TIM2_IRQn);
 
 	TIM_Cmd(TIM2, ENABLE);
 
 	accelerations_t acc_tmp;
 
 	while(1) {
-		ulTaskNotifyTake(pdFALSE, 0);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
 
 		taskENTER_CRITICAL();
 		const int global_status = spi_task_state.global_status.mode;

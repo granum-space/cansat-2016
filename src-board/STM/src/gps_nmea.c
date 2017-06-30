@@ -12,7 +12,11 @@
 
 #include <minmea.h>
 
+#include "led.h"
+
 #include "gps_nmea.h"
+
+#include "diag/Trace.h"
 
 gr_stm_gps_state_t gps_state;
 
@@ -108,14 +112,10 @@ void gps_task(void * args)
 			_msg_buffer[0] = _read_dma_buffer();
 		} while (_msg_buffer[0] != '$');
 
-		_msg_carret = 0;
+		_msg_carret = 1;
 		// Оп! нашли, накапливаем первые шесть символов
-		while(_msg_carret < 6)
+		while(_msg_carret <= 6)
 			_msg_buffer[_msg_carret++] = _read_dma_buffer();
-
-		// проверяем, это наш GGA?
-		if (memcmp(_msg_buffer, "$GPGGA", 6) != 0)
-			continue; // нет.. ну ладно
 
 		// теперь накапливаем все до \r\n
 		do {
@@ -143,6 +143,8 @@ void gps_task(void * args)
 		gps_state.height = _height;
 		gps_state.has_fix = _hasFix;
 		taskEXIT_CRITICAL();
+
+		led_toggle();
 	}
 }
 

@@ -16,11 +16,13 @@
 void led_init(void)
 {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+
+	led_set(false);
+
 	GPIO_InitTypeDef pc_init;
 	pc_init.GPIO_Mode = GPIO_Mode_Out_OD;
 	pc_init.GPIO_Pin = GPIO_Pin_13;
 	pc_init.GPIO_Speed = GPIO_Speed_50MHz;
-
 	GPIO_Init(GPIOC, &pc_init);
 }
 
