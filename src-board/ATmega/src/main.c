@@ -36,6 +36,7 @@
 #include "granum_globals.h"
 #include "granum_config.h"
 #include <math.h>
+#include "diskio.h"
 
 static void init();
 
@@ -50,6 +51,7 @@ static enum {
 	RADIO_STATE_COLLECTING
 } radio_state;
 static uint8_t radio_bytes[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
 
 void gr_nextMode(void) {
 	if(gr_status.mode == GR_MODE_ONGROUND) return;
@@ -81,6 +83,7 @@ void gr_nextMode(void) {
 		break;
 	}
 }
+
 
 void radio_checkForCommads(void) {
 	uint8_t databyte = 0;
@@ -155,6 +158,7 @@ int main() {
 			RSCS_DEBUG("TSL: %d e: %d    %d e: %d    %d e: %d\n", telemetry_fast.luminosity[0].lux, telemetry_fast.luminosity[0].error,
 						telemetry_fast.luminosity[1].lux, telemetry_fast.luminosity[1].error,
 						telemetry_fast.luminosity[2].lux, telemetry_fast.luminosity[2].error);
+			RSCS_DEBUG("SD ERR: %d\n", gr_sd_last_err);
 		}
 
 		if((tick_counter % GR_TICK_SLOW_PRESCALER) == 0) { //slow part
@@ -176,27 +180,28 @@ int main() {
 
 			if(gr_stm_state.acc_state.accbuf_status == ACC_STATUS_LOCKED) gr_nextMode();
 
-			printf("STM32 ADXL: %d  %d  %d\n", gr_stm_state.acc_state.current_acc.x, gr_stm_state.acc_state.current_acc.y, gr_stm_state.acc_state.current_acc.z);
+			RSCS_DEBUG("STM32 ADXL: %d  %d  %d\n", gr_stm_state.acc_state.current_acc.x, gr_stm_state.acc_state.current_acc.y, gr_stm_state.acc_state.current_acc.z);
+			RSCS_DEBUG("CARRET: %d, STATUS: %d\n", gr_stm_state.acc_state.accbuf_buffer_carret, gr_stm_state.acc_state.accbuf_status);
+			RSCS_DEBUG("GPS: %f  %f  %f    %d\n", gr_stm_state.gps_state.lat, gr_stm_state.gps_state.lon, gr_stm_state.gps_state.height, gr_stm_state.gps_state.has_fix);
 
 			RSCS_DEBUG("RAW ADC: %ld  %ld  %ld\n", telemetry_so_slow.temperature_soil[0], telemetry_so_slow.temperature_soil[1], telemetry_so_slow.temperature_soil[2]);
-
 			RSCS_DEBUG("SOILRES: %ld   %ld   %ld\n", 	telemetry_slow.soilresist_data[0].resistance,
 												telemetry_slow.soilresist_data[1].resistance,
 												telemetry_slow.soilresist_data[2].resistance);
 			RSCS_DEBUG("BMP280: P:%ld  T:%ld    e: %d\n", telemetry_slow.pressure, telemetry_slow.temperature_bmp, telemetry_slow.bmp280_error);
+			RSCS_DEBUG("SD ERR: %d\n", gr_sd_last_err);
 		}
 
 		if((tick_counter % GR_TICK_SO_SLOW_PRESCALER) == 0) { //so slow part
 			sens_update_so_slow();
 
 			RSCS_DEBUG("DS18B20: %d   e: %d   %d\n", telemetry_so_slow.temperature_ds18, telemetry_so_slow.ds18b20_error_read, telemetry_so_slow.ds18b20_error_conversion);
+			RSCS_DEBUG("SD ERR: %d\n", gr_sd_last_err);
 		}
 
 		RSCS_DEBUG("\n\n\n\n");
-
-		printf("Mode %d\n", gr_status.mode);
-
-		RSCS_DEBUG("\n\n\n\n");
+		RSCS_DEBUG("Mode %d\n", gr_status.mode);
+		//RSCS_DEBUG("\n\n\n\n");
 
 
 
@@ -224,26 +229,39 @@ static void init() {
 
 	sei();
 
-	{ //UART
-		uart_data = rscs_uart_init(GR_UART_ID, 	RSCS_UART_FLAG_ENABLE_RX
+	{ //UART data
+		uart_data = rscs_uart_init(GR_UART_DATA_ID, 	RSCS_UART_FLAG_ENABLE_RX
 														|RSCS_UART_FLAG_BUFFER_RX
 														|RSCS_UART_FLAG_ENABLE_TX
-														|RSCS_UART_FLAG_BUFFER_TX);
+														|RSCS_UART_FLAG_BUFFER_TX
+														);
 		rscs_uart_set_baudrate(uart_data, 9600);
 		rscs_uart_set_character_size(uart_data, 8);
 		rscs_uart_set_parity(uart_data, RSCS_UART_PARITY_NONE);
 		rscs_uart_set_stop_bits(uart_data, RSCS_UART_STOP_BITS_ONE);
-
-		stdin = stdout = rscs_make_uart_stream(uart_data);
 	}
 
+#ifdef RSCS_DEBUGMODE
+	{ //UART debug
+		uart_debug = rscs_uart_init(GR_UART_DEBUG_ID, 	RSCS_UART_FLAG_ENABLE_RX
+														|RSCS_UART_FLAG_BUFFER_RX
+														|RSCS_UART_FLAG_ENABLE_TX
+														|RSCS_UART_FLAG_BUFFER_TX
+														);
+		rscs_uart_set_baudrate(uart_debug, 38400);
+		rscs_uart_set_character_size(uart_debug, 8);
+		rscs_uart_set_parity(uart_debug, RSCS_UART_PARITY_NONE);
+		rscs_uart_set_stop_bits(uart_debug, RSCS_UART_STOP_BITS_ONE);
+
+		RSCS_DEBUG_INIT(uart_debug);
+	}
+#endif
+
+	RSCS_DEBUG("INIT_STARTED\n");
 	rscs_spi_init();
-
 	rscs_i2c_init();
-
+	dump_init(); //FatFS and SDcard
 	sens_init();
-
 	gr_servo_init();
-
 	GR_FUSE_INIT
 }

@@ -14,7 +14,7 @@
 #include "granum_config.h"
 #include "granum_globals.h"
 
-void dump_init(char * filename);
+void dump_init(void);
 void dump(const void * data, size_t datasize);
 
 

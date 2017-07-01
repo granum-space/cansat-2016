@@ -11,6 +11,8 @@ extern "C" {
 
 #include "integer.h"
 
+extern int gr_sd_last_err;
+
 
 /* Status of Disk Functions */
 typedef BYTE	DSTATUS;

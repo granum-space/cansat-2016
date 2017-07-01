@@ -14,7 +14,7 @@
 // Для включения раскомментируйте
 // ========================================================
 
-//#define RSCS_DEBUGMODE 1
+#define RSCS_DEBUGMODE 1
 
 // ========================================================
 // настройки GPS
@@ -91,7 +91,7 @@
 // Частота SPI модуля SD карты, которую он устанавливает при вызове rscs_sd_spi_setup
 #define RSCS_SDCARD_SPI_CLK_SLOW (100)
 // Частота SPI модуля SD карты, которую он устанавливает при вызове rscs_sd_spi_setup_slow
-#define RSCS_SDCARD_SPI_CLK_FAST (400)
+#define RSCS_SDCARD_SPI_CLK_FAST (16000)
 
 
 
@@ -119,7 +119,7 @@
 // ========================================================
 // Использовать ли буферизацию
 #define RSCS_UART_USEBUFFERS // Добавить код для поддержки циклических буферов в UART
-#define RSCS_UART_BUFSIZE_RX 50 // размер буфера на RX
+#define RSCS_UART_BUFSIZE_RX 10 // размер буфера на RX
 #define RSCS_UART_BUFSIZE_TX 50 // размер буфера на TX
 
 

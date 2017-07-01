@@ -18,9 +18,9 @@
 #define GR_JMP_INIT PORTA |= (1 << 0);
 #define GR_JMP_INACT_VAL !(PINA & (1 << 0))
 
-#define GR_TICK_DELAY_MS 150
-#define GR_TICK_SLOW_PRESCALER 1
-#define GR_TICK_SO_SLOW_PRESCALER 1
+#define GR_TICK_DELAY_MS 200
+#define GR_TICK_SLOW_PRESCALER 5
+#define GR_TICK_SO_SLOW_PRESCALER 15
 
 //Настройки дигипота
 #define DP_CS_PORTREG PORTB
@@ -54,9 +54,9 @@
 
 
 //Настройки АЦП для термиторов
-#define GR_THERMISTORS_ADC_CHANNEL_1 RSCS_ADC_SINGLE_0
-#define GR_THERMISTORS_ADC_CHANNEL_2 RSCS_ADC_SINGLE_1
-#define GR_THERMISTORS_ADC_CHANNEL_3 RSCS_ADC_SINGLE_2
+#define GR_THERMISTORS_ADC_CHANNEL_1 RSCS_ADC_SINGLE_1
+#define GR_THERMISTORS_ADC_CHANNEL_2 RSCS_ADC_SINGLE_2
+#define GR_THERMISTORS_ADC_CHANNEL_3 RSCS_ADC_SINGLE_3
 
 
 //Настройки SD
@@ -69,7 +69,8 @@
 #define GR_DUMP_FFS_SYNC_PERIOD 0
 
 //Настройки UART
-#define GR_UART_ID RSCS_UART_ID_UART0
+#define GR_UART_DATA_ID RSCS_UART_ID_UART0
+#define GR_UART_DEBUG_ID RSCS_UART_ID_UART1
 
 //Макросы управления CS к STM32
 #define GR_STM_SELECT PORTB &= ~(1 << 6);
@@ -82,6 +83,7 @@
 
 //Порого срабатывания для стержней (Ом)
 #define GR_SOILRES_THRESHOLD 100
+#define GR_SOILRES_SPI_CLK_KHZ 1000
 
 //Настройки DHT22
 #define RG_DHT22_PORTREG PORTC
@@ -105,8 +107,13 @@
 //Время минимального прожига
 #define GR_PENETRATORS_MIN_EXIT_TIME_MS 1500
 
+// Время
+
 //Настройки SPI для STM32
 #define GR_STM_SPI_FREQ_kHz 300
 #define GR_STM_SPI_PAUSE_uS 200 //Пауза между байтами
+
+//Размер блока выкачки ускорений с STM
+#define GR_STM_ACC_BLOCK_SIZE 100
 
 #endif /* GRANUM_CONFIG_H_ */

@@ -64,26 +64,27 @@ void stm32_transmitSystemStatus() {
 void stm32_getAccelerations() {
 	rscs_spi_set_clk(GR_STM_SPI_FREQ_kHz);
 
-	int step = 100;
-	gr_telemetry_adxl375_t * packet = malloc( sizeof(gr_telemetry_adxl375_t) + step * sizeof(accelerations_t) );
-	for(uint32_t i = 0; i <= GR_STM_ACCBUF_SIZE; i += step + 1) {
+	gr_telemetry_adxl375_t * packet = malloc( sizeof(gr_telemetry_adxl375_t) + GR_STM_ACCBUF_SIZE * sizeof(accelerations_t) );
+	packet->request.offset = 0;
+	packet->request.size = GR_STM_SPI_FREQ_kHz;
+
+	for( 	;
+			packet->request.offset <= GR_STM_ACCBUF_SIZE;
+			packet->request.offset += packet->request.size + 1) {
+
 		GR_STM_SELECT
 
 		_spi_do_delay(AMRQ_ACC_DATA);
-		_spi_do_delay(i);
-		_spi_do_delay(i + step);
+		_spi_write_delay(&( packet->request ), sizeof(packet->request));
 
-		_spi_read_delay(packet->data, step, 0xFF);
+		_spi_read_delay(packet->data, packet->request.size, 0xFF);
 
 		GR_STM_UNSELECT
 
-		packet->start_i = i;
-		packet->end_i = i + step;
-
 		packet->checksumm = 0;
 
-		packet->checksumm = gr_checksumm_calculate(packet, sizeof(gr_telemetry_adxl375_t) + step * sizeof(accelerations_t) );
+		packet->checksumm = gr_checksumm_calculate(packet, sizeof(gr_telemetry_adxl375_t) + GR_STM_ACCBUF_SIZE * sizeof(accelerations_t) );
 
-		dump(packet->data, step);
+		dump(packet,  sizeof(gr_telemetry_adxl375_t) + GR_STM_ACCBUF_SIZE * sizeof(accelerations_t));
 	}
 }

@@ -95,9 +95,22 @@ typedef struct {
 } gr_telemetry_so_slow_t;
 
 
+// Тип для отступов ускорений
+typedef uint16_t gr_stm_accbuf_offset_t;
+
+
+// Запрос на передачу данных накопленных ускорений
+typedef struct
+{
+	gr_stm_accbuf_offset_t offset;	// отступ запрашиваемой зоны
+	gr_stm_accbuf_offset_t size;	// размер запрашиваемой зоны
+} gr_stm_accbuf_values_request;
+
+
 typedef struct {
 	uint16_t marker; //Must be 0xFA7B
-	uint16_t start_i, end_i;
+
+	gr_stm_accbuf_values_request request;
 	uint32_t checksumm;
 
 	accelerations_t data[];
@@ -113,22 +126,7 @@ typedef struct {
 		GR_MODE_LANDING,
 		GR_MODE_ONGROUND
 	} mode;
-
-	// FIXME: УБрать в очередной статус ? или убрать нафиг
-	bool seeds_activated;
 } gr_status_t;
-
-
-// Тип для отступов ускорений
-typedef uint16_t gr_stm_accbuf_offset_t;
-
-
-// Запрос на передачу данных накопленных ускорений
-typedef struct
-{
-	gr_stm_accbuf_offset_t offset;	// отступ запрашиваемой зоны
-	gr_stm_accbuf_offset_t size;	// размер запрашиваемой зоны
-} gr_stm_accbuf_values_request;
 
 
 typedef enum {

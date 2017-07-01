@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "diskio.h"     /* FatFs lower layer API */
 
@@ -24,8 +25,10 @@
 #define DEV_MMC     0   /* Example: Map MMC/SD card to physical drive 1 */
 //#define DEV_USB     2   /* Example: Map USB MSD to physical drive 2 */
 
+int gr_sd_last_err = 0;
 
-static int mmc_status = STA_NOINIT;
+static int _mmc_status = STA_NOINIT;
+static rscs_sdcard_t * _sdcard = NULL;
 
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
@@ -38,7 +41,7 @@ DSTATUS disk_status (
    if (DEV_MMC != pdrv)
       return STA_NODISK;
 
-   return (DSTATUS)mmc_status;
+   return (DSTATUS)_mmc_status;
 }
 
 
@@ -54,12 +57,15 @@ DSTATUS disk_initialize (
    if (DEV_MMC != pdrv)
       return STA_NODISK;
 
-   sdcard = rscs_sd_init(&GR_SD_CS_DDRREG, &GR_SD_CS_PORTREG, GR_SD_CS_PIN_MASK);
-   rscs_e err = rscs_sd_startup(sdcard);
-   if (RSCS_E_NONE == err)
-      mmc_status &= ~STA_NOINIT;
+   if (_sdcard == NULL)
+	   _sdcard = rscs_sd_init(&GR_SD_CS_DDRREG, &GR_SD_CS_PORTREG, GR_SD_CS_PIN_MASK);
 
-   return (DSTATUS)mmc_status;
+   gr_sd_last_err = rscs_sd_startup(_sdcard);
+
+   if (RSCS_E_NONE == gr_sd_last_err)
+      _mmc_status &= ~STA_NOINIT;
+
+   return (DSTATUS)_mmc_status;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -76,12 +82,12 @@ DRESULT disk_read (
    if (pdrv != DEV_MMC)
       return RES_PARERR;
 
-   if (mmc_status & (STA_NOINIT | STA_NODISK))
+   if (_mmc_status & (STA_NOINIT | STA_NODISK))
       return RES_NOTRDY;
 
-   rscs_e err = rscs_sd_block_read(sdcard, sector, buff, count);
+   gr_sd_last_err = rscs_sd_block_read(_sdcard, sector, buff, count);
    DRESULT retval = RES_OK;
-   if (err)
+   if (gr_sd_last_err)
       retval = RES_ERROR;
 
    return retval;
@@ -104,12 +110,12 @@ DRESULT disk_write (
    if (pdrv != DEV_MMC)
       return RES_PARERR;
 
-   if (mmc_status & (STA_NOINIT | STA_NODISK))
+   if (_mmc_status & (STA_NOINIT | STA_NODISK))
       return RES_NOTRDY;
 
-   rscs_e err = rscs_sd_block_write(sdcard, sector, buff, count);
+   gr_sd_last_err = rscs_sd_block_write(_sdcard, sector, buff, count);
    DRESULT retval = RES_OK;
-   if (err != RSCS_E_NONE)
+   if (gr_sd_last_err != RSCS_E_NONE)
       retval = RES_ERROR;
 
    return retval;

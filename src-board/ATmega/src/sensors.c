@@ -57,8 +57,6 @@ void sens_init() {
 
 	dht22 = rscs_dht22_init(&RG_DHT22_PORTREG, &RG_DHT22_PINREG, &RG_DHT22_DDRREG, RG_DHT22_PINNUMBER, 7.0f); //DHT22
 
-	dump_init("granum"); //FatFS and SDcard
-
 	{ //TSL2561
 		tsl2561_A = rscs_tsl2561_init(RSCS_TSL2561_ADDR_LOW);
 		tsl2561_B = rscs_tsl2561_init(RSCS_TSL2561_ADDR_HIGH);

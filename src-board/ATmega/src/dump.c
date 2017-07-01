@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "librscs_config.h"
+
 #pragma GCC diagnostic push // очень много варнингов на эту тему от фриртоса и fatfs
 #pragma GCC diagnostic ignored "-Wpadded"
 #include <ff.h>
@@ -14,17 +16,16 @@
 #define OPERATION(OP) if(OP != RSCS_E_NONE) return;
 
 static FATFS fs;
-static bool fs_mounted = false;
 static bool fs_goodFile = false;
 static FIL fs_file;
-static char * fs_filename;
 
 static inline void _initFile() {
 	FRESULT res;
 	size_t i = 0;
 	// монтируем диск
 
-	if (!fs_mounted )
+	if (!fs_goodFile )
+	{
 		do {
 			res = f_mount(&fs, "0", 1);
 			i++;
@@ -33,15 +34,13 @@ static inline void _initFile() {
 				return;
 			}
 		} while (res != FR_OK);
-	fs_mounted = true;
 
-	if(!fs_goodFile) {
 		// выбираем имя файлу
 		char fname[15];
 		for (i = 0; i < SIZE_MAX; i++)
 		{
 			fname[0] ='\0';
-			sprintf(fname, "0:/%s%u.bin", fs_filename, i);
+			sprintf(fname, "0:/gr_%u.bin", i);
 			FILINFO info;
 			if ((res = f_stat(fname, &info)) == FR_NO_FILE)
 			{
@@ -51,7 +50,7 @@ static inline void _initFile() {
 			}
 			else if (res == FR_OK)
 			{
-				RSCS_DEBUG("dump file name '%s' already exists\n", fname);
+				//RSCS_DEBUG("dump file name '%s' already exists\n", fname);
 			}
 			else
 			{
@@ -70,30 +69,38 @@ static inline void _initFile() {
 	}
 }
 
-void dump_init(char * filename)
+
+void dump_init(void)
 {
-	fs_filename = filename;
 	_initFile();
 }
 
+
 void dump(const void * data, size_t datasize)
 {
-	//rscs_uart_write(uart_data, data, datasize); FIXME
-
+	rscs_uart_write(uart_data, data, datasize);
 	_initFile();
 
-	if(fs_mounted & fs_goodFile) {
+	rscs_spi_set_clk(RSCS_SDCARD_SPI_CLK_FAST);
+	if(fs_goodFile) {
 		UINT dummy;
 		FRESULT res;
 		// пишем на флешку
 		if ((res = f_write(&fs_file, data, datasize, &dummy)) != FR_OK)
+		{
 			RSCS_DEBUG("write error %d\n", res);
+			fs_goodFile = false;
+		}
+
 
 		static int_fast32_t sync_counter = 0;
 		if (sync_counter >= GR_DUMP_FFS_SYNC_PERIOD)
 		{
 			if ((res = f_sync(&fs_file)) != FR_OK)
+			{
 				RSCS_DEBUG("sync error %d\n", res);
+				fs_goodFile = false;
+			}
 			sync_counter = 0;
 		}
 		sync_counter++;
