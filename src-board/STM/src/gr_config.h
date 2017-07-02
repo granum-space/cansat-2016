@@ -19,7 +19,7 @@
 //! Перевод ускорений из G в попугаи акселерометра
 #define ACC_G_TO_PARROTS(G) 			((int)(G/0.050))
 //! Размер буфера хранимых ускорений (В элементах)
-#define ACC_BUFFER_SIZE 1000
+#define ACC_BUFFER_SIZE (GR_STM_ACCBUF_SIZE)
 
 #define ACC_TASK_TIMER_PRIO		(configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 2)
 #define SPI_INTERRUPT_PRIO  	(configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY)

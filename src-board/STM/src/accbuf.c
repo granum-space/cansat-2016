@@ -66,14 +66,22 @@ int accbuf_update(accelerations_t * retval)
 
 	_push_to_buffer(retval);
 
-	if (status_cpy == ACC_STATUS_SIMPLE_READ)
-		goto end;
-
-	const int32_t acc_modulus = retval->x * retval->x
+	const uint32_t acc_modulus = retval->x * retval->x
 			+ retval->y * retval->y
 			+ retval->z * retval->z;
 
-	int32_t acc_impact_limit = ACC_G_TO_PARROTS(ACC_IMPACT_LIMIT_G);
+	if (acc_state.max_acc < acc_modulus)
+	{
+		// на чтение критическую секцию не берем, так как никто кроме нас его не модифицирует
+		taskENTER_CRITICAL();
+		acc_state.max_acc = acc_modulus;
+		taskEXIT_CRITICAL();
+	}
+
+	if (status_cpy == ACC_STATUS_SIMPLE_READ)
+		goto end;
+
+	uint32_t acc_impact_limit = ACC_G_TO_PARROTS(ACC_IMPACT_LIMIT_G);
 	acc_impact_limit = acc_impact_limit * acc_impact_limit;
 	if (acc_modulus >= acc_impact_limit)
 	{
@@ -85,7 +93,7 @@ int accbuf_update(accelerations_t * retval)
 	if (status_cpy != ACC_STATUS_WAIT_LOCK)
 		goto end;
 
-	int32_t acc_still_limit = ACC_G_TO_PARROTS(ACC_STILL_LIMIT_G);
+	uint32_t acc_still_limit = ACC_G_TO_PARROTS(ACC_STILL_LIMIT_G);
 	acc_still_limit = acc_still_limit * acc_still_limit;
 	if (acc_modulus <= acc_still_limit)
 		_samples_left--;

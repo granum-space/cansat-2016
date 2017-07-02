@@ -158,8 +158,7 @@ void gps_task(void * args)
 		gps_state.has_fix = _hasFix;
 		taskEXIT_CRITICAL();
 
-
-		//led_toggle();
+		led_toggle();
 	}
 }
 

@@ -144,6 +144,7 @@ typedef enum {
 typedef struct
 {
 	accelerations_t current_acc;
+	uint32_t max_acc;
 	gr_stm_accbuf_status_t accbuf_status;
 	gr_stm_accbuf_offset_t accbuf_buffer_carret;
 } gr_stm_acc_state_t;

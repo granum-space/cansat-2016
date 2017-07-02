@@ -65,8 +65,8 @@ void SPI2_IRQHandler() {
 
 void EXTI15_10_IRQHandler() { //CS change handling
 	receiver_state = RECEIVER_AMRQ;
-	_rx_ptr = _rx_ptr_limit = NULL;
-	_tx_ptr = _tx_ptr_limit = NULL;
+	_rx_ptr_limit = _rx_ptr =  NULL;
+	_tx_ptr_limit = _tx_ptr =  NULL;
 	//Сбрасываем флаг прерывания
 	EXTI->PR = EXTI_Line12; //EXTI_ClearITPendingBit(EXTI_Line12);
 }
