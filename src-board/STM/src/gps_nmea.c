@@ -112,6 +112,7 @@ void gps_task(void * args)
 			_msg_buffer[0] = _read_dma_buffer();
 		} while (_msg_buffer[0] != '$');
 
+		// Оп! нашли
 		_msg_carret = 1;
 
 		// теперь накапливаем все до \r\n
@@ -131,9 +132,15 @@ void gps_task(void * args)
 		_msg_buffer[_msg_carret] = '\x00';
 
 		// накопили, теперь разбираем
+		if (!minmea_check(_msg_buffer, false))
+			continue;
+
 		struct minmea_sentence_gga frame;
 		if (!minmea_parse_gga(&frame, _msg_buffer))
 			continue; // опс, что-то пошло не так
+
+		if (frame.fix_quality == 0)
+			continue;
 
 		float _lon = minmea_tofloat(&frame.longitude);
 		float _lat = minmea_tofloat(&frame.latitude);
