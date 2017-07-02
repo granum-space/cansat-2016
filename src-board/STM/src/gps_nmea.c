@@ -113,13 +113,16 @@ void gps_task(void * args)
 		} while (_msg_buffer[0] != '$');
 
 		_msg_carret = 1;
-		// Оп! нашли, накапливаем первые шесть символов
-		while(_msg_carret <= 6)
-			_msg_buffer[_msg_carret++] = _read_dma_buffer();
 
 		// теперь накапливаем все до \r\n
 		do {
 			_msg_buffer[_msg_carret++] = _read_dma_buffer();
+			if (_msg_carret >= GPS_MSG_BUFFER_SIZE)
+			{
+				// что-то не так
+				continue;
+			}
+
 		} while('\r' != _msg_buffer[_msg_carret-2]
 			||	'\n' != _msg_buffer[_msg_carret-1]
 		);
@@ -137,6 +140,10 @@ void gps_task(void * args)
 		float _height = minmea_tofloat(&frame.altitude);
 		bool _hasFix = frame.fix_quality != 0;
 
+		//float _lon = frame.longitude.value;
+		//float _lat = frame.longitude.scale;
+		//float _height = _dma_carret;
+
 		taskENTER_CRITICAL();
 		gps_state.lon = _lon;
 		gps_state.lat = _lat;
@@ -144,7 +151,8 @@ void gps_task(void * args)
 		gps_state.has_fix = _hasFix;
 		taskEXIT_CRITICAL();
 
-		led_toggle();
+
+		//led_toggle();
 	}
 }
 
