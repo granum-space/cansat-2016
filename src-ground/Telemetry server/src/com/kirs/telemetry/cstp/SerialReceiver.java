@@ -48,7 +48,7 @@ public class SerialReceiver implements SerialPortEventListener{
                         parser.addBytes(serialPort.readBytes());
                     }
                 }
-                catch(SerialPortException ex) {System.err.println("Ex");}
+                catch(SerialPortException ex) {System.err.println(ex);}
                 catch(NullPointerException ex) {System.err.println("NPE:" + ex + "; " + ex.getMessage());}
 
                 break;

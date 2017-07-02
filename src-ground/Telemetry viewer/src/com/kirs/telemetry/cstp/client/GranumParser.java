@@ -5,22 +5,18 @@
  */
 package com.kirs.telemetry.cstp.client;
 
-import com.roots.map.MapPanel;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -37,7 +33,6 @@ import org.jxmapviewer.painter.CompoundPainter;
 import org.jxmapviewer.viewer.DefaultTileFactory;
 import org.jxmapviewer.viewer.DefaultWaypoint;
 import org.jxmapviewer.viewer.GeoPosition;
-import org.jxmapviewer.viewer.TileFactoryInfo;
 import org.jxmapviewer.viewer.Waypoint;
 import org.jxmapviewer.viewer.WaypointPainter;
 
@@ -51,15 +46,14 @@ public class GranumParser implements JSONParser{
     
     DefaultXYDataset pressure_dataset = new DefaultXYDataset(), accelerations_dataset = new DefaultXYDataset(), temp_dataset = new DefaultXYDataset(),
             humidity_dataset = new DefaultXYDataset(), luminosity_dataset = new DefaultXYDataset(), temp_soil_dataset = new DefaultXYDataset(), soilresist_dataset = new DefaultXYDataset(),
-            latitude_dataset = new DefaultXYDataset(), longtitude_dataset = new DefaultXYDataset(), height_dataset = new DefaultXYDataset(), time_dataset = new DefaultXYDataset();
+            latitude_dataset = new DefaultXYDataset(), longtitude_dataset = new DefaultXYDataset(), height_dataset = new DefaultXYDataset();
     
     double[][] pressure_array = new double[2][], accelerationsX_array = new double[2][], accelerationsY_array = new double[2][], accelerationsZ_array = new double[2][], temp_ds_array = new double[2][], 
             temp_bmp_array = new double[2][], temp_dht_array = new double[2][], humidity_array = new double[2][], 
             luminosity1_array = new double[2][], luminosity2_array = new double[2][], luminosity3_array = new double[2][], 
             temp_soil1_array = new double[2][], temp_soil2_array = new double[2][], temp_soil3_array = new double[2][], 
             soilresist1_array = new double[2][], soilresist2_array = new double[2][], soilresist3_array = new double[2][],
-            latitude_array = new double[2][], longtitude_array = new double[2][], height_array = new double[2][],
-            time_array = new double[2][];
+            latitude_array = new double[2][], longtitude_array = new double[2][], height_array = new double[2][];
     
     ArrayList<Double> pressure_list = new ArrayList<>(), accelerationsX_list = new ArrayList<>(), accelerationsY_list = new ArrayList<>(), accelerationsZ_list = new ArrayList<>(), temp_ds_list = new ArrayList<>(), 
             temp_bmp_list = new ArrayList<>(), temp_dht_list = new ArrayList<>(), humidity_list = new ArrayList<>(), 
@@ -67,7 +61,7 @@ public class GranumParser implements JSONParser{
             temp_soil1_list = new ArrayList<>(), temp_soil2_list = new ArrayList<>(), temp_soil3_list = new ArrayList<>(), 
             soilresist1_list = new ArrayList<>(), soilresist2_list = new ArrayList<>(), soilresist3_list = new ArrayList<>(),
             latitude_list = new ArrayList<>(), longtitude_list = new ArrayList<>(), height_list = new ArrayList<>(),
-            time_list = new ArrayList<>();
+            time_fast_list = new ArrayList<>(),time_slow_list = new ArrayList<>(), time_so_slow_list = new ArrayList<>();
     
     //MapPanel map = new MapPanel();
     JXMapViewer map = new JXMapViewer();
@@ -121,7 +115,7 @@ public class GranumParser implements JSONParser{
         tf.setThreadPoolSize(8);
         map.setTileFactory(tf);
         
-        map.setZoom(7);
+        map.setZoom(15);
         map.addMouseWheelListener(new MouseWheelListener() {
 
             @Override
@@ -144,117 +138,161 @@ public class GranumParser implements JSONParser{
     @Override
     public void parse(JSONObject json) {
         
-        pressure_list.add(json.getDouble("PRESSURE"));
-        
-        JSONArray acc = json.getJSONArray("ACCELERATIONS");
-        for(int i = 0; i < 1; i++) {
-            accelerationsX_list.add( acc.getJSONObject(i).getDouble("X") );
-            accelerationsY_list.add( acc.getJSONObject(i).getDouble("Y") );
-            accelerationsZ_list.add( acc.getJSONObject(i).getDouble("Z") );
-            
+        switch(json.getString("TYPE")) {
+            case "FAST":
+                time_fast_list.add(json.getDouble("TIME") / 1000.0f);
+                
+                accelerationsX_list.add(json.getDouble("ACC_X"));
+                accelerationsY_list.add(json.getDouble("ACC_Y"));
+                accelerationsZ_list.add(json.getDouble("ACC_Z"));
+                
+                accelerationsX_array[0] = doubleListToArray(time_fast_list);
+                accelerationsX_array[1] = doubleListToArray(accelerationsX_list);
+
+                accelerationsY_array[0] = doubleListToArray(time_fast_list);
+                accelerationsY_array[1] = doubleListToArray(accelerationsY_list);
+
+                accelerationsZ_array[0] = doubleListToArray(time_fast_list);
+                accelerationsZ_array[1] = doubleListToArray(accelerationsZ_list);
+                
+                accelerations_dataset.addSeries("X", accelerationsX_array);
+                accelerations_dataset.addSeries("Y", accelerationsY_array);
+                accelerations_dataset.addSeries("Z", accelerationsZ_array);
+                
+                
+                
+                luminosity1_list.add(json.getJSONArray("LUMINOSITY").getJSONObject(0).getDouble("LUX"));
+                luminosity2_list.add(json.getJSONArray("LUMINOSITY").getJSONObject(1).getDouble("LUX"));
+                luminosity3_list.add(json.getJSONArray("LUMINOSITY").getJSONObject(2).getDouble("LUX"));
+                
+                luminosity1_array[0] = doubleListToArray(time_fast_list);
+                luminosity1_array[1] = doubleListToArray(luminosity1_list);
+
+                luminosity2_array[0] = doubleListToArray(time_fast_list);
+                luminosity2_array[1] = doubleListToArray(luminosity2_list);
+
+                luminosity3_array[0] = doubleListToArray(time_fast_list);
+                luminosity3_array[1] = doubleListToArray(luminosity3_list);
+                
+                luminosity_dataset.addSeries("1", luminosity1_array);
+                luminosity_dataset.addSeries("2", luminosity2_array);
+                luminosity_dataset.addSeries("3", luminosity3_array);
+                
+                break;
+                
+            case "SLOW":
+                time_slow_list.add(json.getDouble("TIME") / 1000.0f);
+                
+                
+                
+                pressure_list.add(json.getDouble("PRESSURE"));
+                
+                pressure_array[0] = doubleListToArray(time_slow_list);
+                pressure_array[1] = doubleListToArray(pressure_list);
+                
+                pressure_dataset.addSeries("Pressure", pressure_array);
+                
+                
+                
+                temp_bmp_list.add(json.getDouble("TEMPERATURE_BMP280"));
+                
+                temp_bmp_array[0] = doubleListToArray(time_slow_list);
+                temp_bmp_array[1] = doubleListToArray(temp_bmp_list);
+                
+                temp_dataset.addSeries("BMP280", temp_bmp_array);
+                
+                
+                if(json.getDouble("LONGTITUDE") != 0) {
+                    
+                    GeoPosition pos = new GeoPosition(recalcCordToDecimal( json.getDouble("LATITUDE") ), recalcCordToDecimal( json.getDouble("LONGTITUDE") ) );
+                    
+                    map.setAddressLocation(pos);
+                    waypointsPos.add(pos);
+                    waypoints.add( new DefaultWaypoint(pos) );
+
+                    repaintWaypoints();
+                }
+                
+                
+                
+                soilresist1_list.add(json.getJSONArray("SOILRESIST").getJSONObject(0).getDouble("RESISTANCE"));
+                soilresist2_list.add(json.getJSONArray("SOILRESIST").getJSONObject(1).getDouble("RESISTANCE"));
+                soilresist3_list.add(json.getJSONArray("SOILRESIST").getJSONObject(2).getDouble("RESISTANCE"));
+                
+                soilresist1_array[0] = doubleListToArray(time_slow_list);
+                soilresist1_array[1] = doubleListToArray(soilresist1_list);
+
+                soilresist2_array[0] = doubleListToArray(time_slow_list);
+                soilresist2_array[1] = doubleListToArray(soilresist2_list);
+
+                soilresist3_array[0] = doubleListToArray(time_slow_list);
+                soilresist3_array[1] = doubleListToArray(soilresist3_list);
+                
+                soilresist_dataset.addSeries("1", soilresist1_array);
+                soilresist_dataset.addSeries("2", soilresist2_array);
+                soilresist_dataset.addSeries("3", soilresist3_array);
+                
+                break;
+                
+            case "SOSLOW":
+                time_so_slow_list.add(json.getDouble("TIME") / 1000.0f);
+                
+                temp_ds_list.add(json.getDouble("TEMPERATURE_DS18B20"));
+                
+                temp_ds_array[0] = doubleListToArray(time_so_slow_list);
+                temp_ds_array[1] = doubleListToArray(temp_ds_list);
+                
+                temp_dataset.addSeries("DS18B20", temp_ds_array);
+                
+                
+                
+                temp_dht_list.add(json.getDouble("TEMPERATURE_DHT"));
+                
+                temp_dht_array[0] = doubleListToArray(time_so_slow_list);
+                temp_dht_array[1] = doubleListToArray(temp_dht_list);
+                
+                temp_dataset.addSeries("DHT22", temp_dht_array);
+                
+                
+                
+                humidity_list.add(json.getDouble("HUMIDITY"));
+                
+                humidity_array[0] = doubleListToArray(time_so_slow_list);
+                humidity_array[1] = doubleListToArray(humidity_list);
+                
+                humidity_dataset.addSeries("Humidity", humidity_array);
+                
+                
+                
+                temp_soil1_list.add(json.getJSONArray("TEMPERATURE_SOIL").getDouble(0));
+                temp_soil2_list.add(json.getJSONArray("TEMPERATURE_SOIL").getDouble(1));
+                temp_soil3_list.add(json.getJSONArray("TEMPERATURE_SOIL").getDouble(2));
+                
+                temp_soil1_array[0] = doubleListToArray(time_so_slow_list);
+                temp_soil1_array[1] = doubleListToArray(temp_soil1_list);
+
+                temp_soil2_array[0] = doubleListToArray(time_so_slow_list);
+                temp_soil2_array[1] = doubleListToArray(temp_soil2_list);
+
+                temp_soil3_array[0] = doubleListToArray(time_so_slow_list);
+                temp_soil3_array[1] = doubleListToArray(temp_soil3_list);
+                
+                temp_soil_dataset.addSeries("1", temp_soil1_array);
+                temp_soil_dataset.addSeries("2", temp_soil2_array);
+                temp_soil_dataset.addSeries("3", temp_soil3_array);
+                
+                break;
+                
+            case "ACC":
+                
+                break;
         }
         
-        temp_ds_list.add(json.getDouble("TEMPERATURE_DS18"));
-        temp_bmp_list.add(json.getDouble("TEMPERATURE_BMP280"));
-        temp_dht_list.add(json.getDouble("TEMPERATURE_DHT22"));
-        humidity_list.add(json.getDouble("HUMIDITY"));
-        luminosity1_list.add(json.getJSONArray("LUMINOSITY").getDouble(0));
-        luminosity2_list.add(json.getJSONArray("LUMINOSITY").getDouble(1));
-        luminosity3_list.add(json.getJSONArray("LUMINOSITY").getDouble(2));
-        temp_soil1_list.add(json.getJSONArray("TEMPERATURE_SOIL").getDouble(0));
-        temp_soil2_list.add(json.getJSONArray("TEMPERATURE_SOIL").getDouble(1));
-        temp_soil3_list.add(json.getJSONArray("TEMPERATURE_SOIL").getDouble(2));
-        soilresist1_list.add(json.getJSONArray("SOILRESIST").getJSONObject(0).getDouble("DIGIPOT"));
-        soilresist2_list.add(json.getJSONArray("SOILRESIST").getJSONObject(1).getDouble("DIGIPOT"));
-        soilresist3_list.add(json.getJSONArray("SOILRESIST").getJSONObject(2).getDouble("DIGIPOT"));
-        latitude_list.add(json.getDouble("LATITUDE"));
-        longtitude_list.add(json.getDouble("LONGTITUDE"));
-        height_list.add(json.getDouble("HEIGHT"));
-        time_list.add(json.getDouble("TIME") / 1000.0f);
         
-        
-        pressure_array[0] = doubleListToArray(time_list);
-        pressure_array[1] = doubleListToArray(pressure_list);
-        
-        accelerationsX_array[0] = doubleListToArray(time_list);
-        accelerationsX_array[1] = doubleListToArray(accelerationsX_list);
-        
-        accelerationsY_array[0] = doubleListToArray(time_list);
-        accelerationsY_array[1] = doubleListToArray(accelerationsY_list);
-        
-        accelerationsZ_array[0] = doubleListToArray(time_list);
-        accelerationsZ_array[1] = doubleListToArray(accelerationsZ_list);
-        
-        temp_ds_array[0] = doubleListToArray(time_list);
-        temp_ds_array[1] = doubleListToArray(temp_ds_list);
-        
-        temp_bmp_array[0] = doubleListToArray(time_list);
-        temp_bmp_array[1] = doubleListToArray(temp_bmp_list);
-        
-        temp_dht_array[0] = doubleListToArray(time_list);
-        temp_dht_array[1] = doubleListToArray(temp_dht_list);
-        
-        humidity_array[0] = doubleListToArray(time_list);
-        humidity_array[1] = doubleListToArray(humidity_list);
-        
-        luminosity1_array[0] = doubleListToArray(time_list);
-        luminosity1_array[1] = doubleListToArray(luminosity1_list);
-        
-        luminosity2_array[0] = doubleListToArray(time_list);
-        luminosity2_array[1] = doubleListToArray(luminosity2_list);
-        
-        luminosity3_array[0] = doubleListToArray(time_list);
-        luminosity3_array[1] = doubleListToArray(luminosity3_list);
-        
-        temp_soil1_array[0] = doubleListToArray(time_list);
-        temp_soil1_array[1] = doubleListToArray(temp_soil1_list);
-        
-        temp_soil2_array[0] = doubleListToArray(time_list);
-        temp_soil2_array[1] = doubleListToArray(temp_soil2_list);
-        
-        temp_soil3_array[0] = doubleListToArray(time_list);
-        temp_soil3_array[1] = doubleListToArray(temp_soil3_list);
-        
-        soilresist1_array[0] = doubleListToArray(time_list);
-        soilresist1_array[1] = doubleListToArray(soilresist1_list);
-        
-        soilresist2_array[0] = doubleListToArray(time_list);
-        soilresist2_array[1] = doubleListToArray(soilresist2_list);
-        
-        soilresist3_array[0] = doubleListToArray(time_list);
-        soilresist3_array[1] = doubleListToArray(soilresist3_list);
-        
-        latitude_array[0] = doubleListToArray(time_list);
-        latitude_array[1] = doubleListToArray(latitude_list);
-        
-        longtitude_array[0] = doubleListToArray(time_list);
-        longtitude_array[1] = doubleListToArray(longtitude_list);
-
-        height_array[0] = doubleListToArray(time_list);
-        height_array[1] = doubleListToArray(height_list);
-        
-        pressure_dataset.addSeries("Pressure", pressure_array);
-        accelerations_dataset.addSeries("X", accelerationsX_array);
-        accelerations_dataset.addSeries("Y", accelerationsY_array);
-        accelerations_dataset.addSeries("Z", accelerationsZ_array);
-        temp_dataset.addSeries("DS18B20", temp_ds_array);
-        temp_dataset.addSeries("BMP280", temp_bmp_array);
-        temp_dataset.addSeries("DHT22", temp_dht_array);
-        humidity_dataset.addSeries("Humidity", humidity_array);
-        luminosity_dataset.addSeries("1", luminosity1_array);
-        luminosity_dataset.addSeries("2", luminosity2_array);
-        luminosity_dataset.addSeries("3", luminosity3_array);
-        temp_soil_dataset.addSeries("1", temp_soil1_array);
-        temp_soil_dataset.addSeries("2", temp_soil2_array);
-        temp_soil_dataset.addSeries("3", temp_soil3_array);
+        /*
         soilresist_dataset.addSeries("1", soilresist1_array);
         soilresist_dataset.addSeries("2", soilresist2_array);
-        soilresist_dataset.addSeries("3", soilresist3_array);
-        
-        waypointsPos.add( new GeoPosition(json.getDouble("LATITUDE"), json.getDouble("LONGTITUDE")) );
-        waypoints.add( new DefaultWaypoint( new GeoPosition(json.getDouble("LATITUDE"), json.getDouble("LONGTITUDE")) ) );
-        
-        repaintWaypoints();
+        soilresist_dataset.addSeries("3", soilresist3_array);*/
     }
     
     private double[] doubleListToArray(ArrayList<Double> list) {
@@ -266,6 +304,13 @@ public class GranumParser implements JSONParser{
         }
         
         return retval;
+    }
+    
+    private double recalcCordToDecimal(double cordInMinutesSeconds) {
+        int degrees = (int) (cordInMinutesSeconds / 100);
+        double minutes = cordInMinutesSeconds - (degrees * 100.0d);
+        
+        return degrees + (minutes / 60.0d);
     }
     
     private void repaintWaypoints(){

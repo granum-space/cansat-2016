@@ -5,14 +5,12 @@
  */
 package com.kirs.telemetry.cstp;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.JSONObject;
 
 /**
  *
@@ -61,7 +59,7 @@ public class Server implements Runnable{
                         break;
                     }
                     
-                    try { new DataOutputStream(client.getOutputStream()).writeUTF(message.toString() + "\n"); }
+                    try { client.getOutputStream().write((message.toString() + "\n").getBytes("utf-8")); }
                     catch(IOException ex) { 
                         System.err.println("Exception " + ex + "when sending to " + client); 
                         try {

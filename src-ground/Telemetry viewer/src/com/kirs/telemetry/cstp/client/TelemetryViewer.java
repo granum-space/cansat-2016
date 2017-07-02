@@ -31,13 +31,19 @@ public class TelemetryViewer {
     double[] examplearray;
     
     static GUI gui;
+    
+    static int networkPort = 37577;
+    static String serverIP = "127.0.0.1";
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws UnknownHostException {
+        
+        parseArgs(args);
+        
         gui = new GUI(4);
         
-        Thread gatherThread = new Thread(new DataGather(InetAddress.getByName("127.0.0.1"), 37577, new GranumParser(gui)));
+        Thread gatherThread = new Thread(new DataGather(InetAddress.getByName(serverIP), networkPort, new GranumParser(gui)));
         gatherThread.start();
         
         //test();
@@ -72,4 +78,14 @@ public class TelemetryViewer {
         }
     }
     
+    public static void parseArgs(String[] args) {
+        for(int i = 0; i < (args.length / 2); i++) {
+            if( args[ i * 2 ].equals("-p") ) { networkPort = Integer.parseInt( args[ (i * 2) + 1 ] );}
+            else if( args[ i * 2 ].equals("-i") ) {serverIP = args[ (i * 2) + 1 ];}
+            else {
+                System.err.println("Wrong argument: " + args[ i * 2 ]);
+                System.exit(2);
+            }
+        }
+    }
 }
