@@ -78,12 +78,11 @@ void gr_nextMode(void) {
 
 	case GR_MODE_LANDING:
 		GR_FUSE_OFF
-		gr_servo_set(0);
 		break;
 
 	case GR_MODE_ONGROUND:
 		gr_servo_set(0);
-		for(int i = 0; i < 3; i++) stm32_getAccelerations();
+		stm32_getAccelerations();
 		break;
 
 	default:
@@ -210,6 +209,8 @@ int main() {
 		RSCS_DEBUG("Mode %d\n", gr_status.mode);
 		//RSCS_DEBUG("\n\n\n\n");
 
+
+		if(gr_status.mode == GR_MODE_ONGROUND) stm32_getAccelerations();
 
 
 		tick_counter++;

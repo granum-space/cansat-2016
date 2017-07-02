@@ -35,8 +35,15 @@ void _spi_write_delay(const void * write_buffer, size_t buffer_size)
 	}
 }
 
+static int _to_drop = 0;
+static gr_telemetry_adxl375_t _acc_pack;
+
 void stm32_initExchange() {
 	GR_STM_INIT_CS;
+
+	_acc_pack.marker = 0xFA7B;
+	_acc_pack.request.offset = 0;
+	_acc_pack.request.size = sizeof(_acc_pack.data) / sizeof(_acc_pack.data[0]);
 }
 
 void stm32_updateSTMStatus(){
@@ -48,6 +55,10 @@ void stm32_updateSTMStatus(){
 	_spi_read_delay(&gr_stm_state, sizeof(gr_stm_state), 0xff);
 
 	GR_STM_UNSELECT
+
+	uint16_t marker = GR_STM_STATE_MARKER;
+	dump(&marker, sizeof(marker));
+	dump(&gr_stm_state, sizeof(gr_stm_state));
 }
 
 void stm32_transmitSystemStatus() {
@@ -64,27 +75,26 @@ void stm32_transmitSystemStatus() {
 void stm32_getAccelerations() {
 	rscs_spi_set_clk(GR_STM_SPI_FREQ_kHz);
 
-	gr_telemetry_adxl375_t * packet = malloc( sizeof(gr_telemetry_adxl375_t) + GR_STM_ACCBUF_SIZE * sizeof(accelerations_t) );
-	packet->request.offset = 0;
-	packet->request.size = GR_STM_SPI_FREQ_kHz;
-
-	for( 	;
-			packet->request.offset <= GR_STM_ACCBUF_SIZE;
-			packet->request.offset += packet->request.size + 1) {
+	if(_to_drop < (GR_STM_ACCBUF_SIZE * 3)){
 
 		GR_STM_SELECT
 
-		_spi_do_delay(AMRQ_ACC_DATA);
-		_spi_write_delay(&( packet->request ), sizeof(packet->request));
+		_acc_pack.request.offset = _to_drop % GR_STM_ACCBUF_SIZE;
+		_acc_pack.try = (_to_drop / GR_STM_ACCBUF_SIZE) + 1;
 
-		_spi_read_delay(packet->data, packet->request.size, 0xFF);
+		_spi_do_delay(AMRQ_ACC_DATA);
+		_spi_write_delay(&( _acc_pack.request ), sizeof(_acc_pack.request));
+
+		_spi_read_delay(_acc_pack.data, _acc_pack.request.size * sizeof(accelerations_t), 0xFF);
 
 		GR_STM_UNSELECT
 
-		packet->checksumm = 0;
+		_acc_pack.checksumm = 0;
 
-		packet->checksumm = gr_checksumm_calculate(packet, sizeof(gr_telemetry_adxl375_t) + GR_STM_ACCBUF_SIZE * sizeof(accelerations_t) );
+		_acc_pack.checksumm = gr_checksumm_calculate(&_acc_pack, sizeof(gr_telemetry_adxl375_t));
 
-		dump(packet,  sizeof(gr_telemetry_adxl375_t) + GR_STM_ACCBUF_SIZE * sizeof(accelerations_t));
+		dump(&_acc_pack,  sizeof(gr_telemetry_adxl375_t));
+
+		_to_drop += _acc_pack.request.size;
 	}
 }

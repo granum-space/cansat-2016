@@ -114,10 +114,13 @@ typedef struct
 typedef struct {
 	uint16_t marker; //Must be 0xFA7B
 
-	gr_stm_accbuf_values_request request;
-	uint32_t checksumm;
+	int8_t try;
 
-	accelerations_t data[];
+	gr_stm_accbuf_values_request request;
+
+	accelerations_t data[50];
+
+	uint32_t checksumm;
 } gr_telemetry_adxl375_t;
 
 
@@ -145,7 +148,7 @@ typedef struct
 {
 	accelerations_t current_acc;
 	uint32_t max_acc;
-	gr_stm_accbuf_status_t accbuf_status;
+	uint8_t accbuf_status;
 	gr_stm_accbuf_offset_t accbuf_buffer_carret;
 } gr_stm_acc_state_t;
 
@@ -161,6 +164,8 @@ typedef struct {
 	gr_stm_acc_state_t acc_state;
 	gr_stm_gps_state_t gps_state;
 } gr_stm_state_t;
+
+#define GR_STM_STATE_MARKER 0xABF7
 
 
 //Запросы от атмеги к стм
