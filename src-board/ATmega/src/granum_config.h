@@ -78,9 +78,6 @@
 
 #define GR_STM_INIT_CS DDRB |= (1 << 6); GR_STM_SELECT
 
-//Размер буфера для ускорений на STM (в измерениях)
-#define GR_STM_ACCBUF_SIZE 2000
-
 //Порого срабатывания для стержней (Ом)
 #define GR_SOILRES_THRESHOLD 100
 #define GR_SOILRES_SPI_CLK_KHZ 1000

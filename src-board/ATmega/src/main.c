@@ -46,6 +46,8 @@ static soilresist_data_t _soilres_lastdata[9];
 
 static uint32_t _exit_time, _fuse_on_time;
 
+static int _slowing_coeff_ms = 1000;
+
 static enum {
 	RADIO_STATE_IDLE,
 	RADIO_STATE_COLLECTING
@@ -60,6 +62,11 @@ void gr_nextMode(void) {
 	stm32_transmitSystemStatus();
 
 	switch(gr_status.mode) {
+
+	case GR_MODE_AWAITING_EXIT:
+		_slowing_coeff_ms = 0;
+		break;
+
 	case GR_MODE_AWAITING_PARACHUTE:
 		_exit_time = rscs_time_get();
 		break;
@@ -207,7 +214,7 @@ int main() {
 
 		tick_counter++;
 
-		while(rscs_time_get() < (cycleStartTime + GR_TICK_DELAY_MS));
+		while(rscs_time_get() < (cycleStartTime + GR_TICK_DELAY_MS + _slowing_coeff_ms));
 
 		PORTG ^= (1 << 3);
 	}

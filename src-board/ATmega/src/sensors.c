@@ -89,6 +89,8 @@ void sens_update_fast() {
 	telemetry_fast.time = rscs_time_get();
 	telemetry_fast.tick = tick_counter;
 
+	telemetry_fast.mode = gr_status.mode;
+
 	telemetry_fast.checksumm = gr_checksumm_calculate(&telemetry_fast, sizeof(telemetry_fast) - sizeof(telemetry_fast.checksumm));
 
 	dump(&telemetry_fast, sizeof(telemetry_fast));
@@ -157,6 +159,15 @@ void sens_update_so_slow() {
 
 		rscs_adc_start_single_conversion(GR_THERMISTORS_ADC_CHANNEL_1);
 	}
+
+	telemetry_so_slow.time = rscs_time_get();
+	telemetry_so_slow.tick = tick_counter;
+
+	telemetry_so_slow.checksumm = gr_checksumm_calculate(&telemetry_so_slow, sizeof(telemetry_so_slow) - sizeof(telemetry_so_slow.checksumm));
+
+	dump(&telemetry_so_slow, sizeof(telemetry_so_slow));
+
+	telemetry_so_slow.number++;
 }
 
 uint32_t gr_checksumm_calculate(void * data, size_t datasize) {

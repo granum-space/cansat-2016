@@ -15,6 +15,8 @@
 #pragma GCC diagnostic pop
 #endif
 
+#define GR_STM_ACCBUF_SIZE 1000
+
 //Вспомогательный тип для хранения ускорений
 typedef struct {
 	int16_t x, y, z;
@@ -40,6 +42,8 @@ typedef struct {
 
 	uint16_t number;
 	uint32_t tick;
+
+	uint8_t mode;
 
 	accelerations_t accelerations;
 	int8_t adxl345_error;
