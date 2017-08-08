@@ -63,6 +63,8 @@ public class GranumParser implements JSONParser{
             latitude_list = new ArrayList<>(), longtitude_list = new ArrayList<>(), height_list = new ArrayList<>(),
             time_fast_list = new ArrayList<>(),time_slow_list = new ArrayList<>(), time_so_slow_list = new ArrayList<>();
     
+    ArrayList<ArrayList<Double>> accel_x = new ArrayList<>(), accel_y = new ArrayList<>(), accel_z = new ArrayList<>();
+    
     //MapPanel map = new MapPanel();
     JXMapViewer map = new JXMapViewer();
     ArrayList<GeoPosition> waypointsPos = new ArrayList<>();
@@ -131,9 +133,15 @@ public class GranumParser implements JSONParser{
         gui.addChart(map);
         
         gui.setVisible(true);
+        
+        for(int i = 0; i < 3; i++){
+            accel_x.add(new ArrayList<>());
+            accel_y.add(new ArrayList<>());
+            accel_z.add(new ArrayList<>());
+        }
     }
-
-    int i = 0;
+    
+    boolean[] needIntegrate = {true, true, true};
     
     @Override
     public void parse(JSONObject json) {
@@ -285,14 +293,26 @@ public class GranumParser implements JSONParser{
                 
             case "ACC":
                 
+                long try_num = json.getLong("TRY");
+                long size = json.getLong("SIZE");
+                
+                JSONArray accelerations = json.getJSONArray("ACCELERATIONS");
+                
+                for(int i = 0; i < size; i++) {
+                    accel_x.get((int) try_num).add((int) accelerations.getJSONObject(i).getLong("OFFSET"), accelerations.getJSONObject(i).getDouble("X") * 0.05);
+                    accel_y.get((int) try_num).add((int) accelerations.getJSONObject(i).getLong("OFFSET"), accelerations.getJSONObject(i).getDouble("Y") * 0.05);
+                    accel_z.get((int) try_num).add((int) accelerations.getJSONObject(i).getLong("OFFSET"), accelerations.getJSONObject(i).getDouble("Z") * 0.05);
+                }
+                
+                for(int i = 0; i < 3; i++) {
+                    if(accel_x.get(i).size() == 1000 & needIntegrate[i]) {
+                        System.err.println(integrateACC(accel_x.get(i), accel_y.get(i), accel_z.get(i)));
+                        needIntegrate[i] = false;
+                    }
+                }
+                
                 break;
         }
-        
-        
-        /*
-        soilresist_dataset.addSeries("1", soilresist1_array);
-        soilresist_dataset.addSeries("2", soilresist2_array);
-        soilresist_dataset.addSeries("3", soilresist3_array);*/
     }
     
     private double[] doubleListToArray(ArrayList<Double> list) {
@@ -327,6 +347,88 @@ public class GranumParser implements JSONParser{
 
         CompoundPainter<JXMapViewer> painter = new CompoundPainter<JXMapViewer>(painters);
         map.setOverlayPainter(painter);
+    }
+    
+    private double integrateACC(ArrayList<Double> acc_x, ArrayList<Double> acc_y, ArrayList<Double> acc_z) {
+        int measurements = acc_x.size() - 1;
+        
+        int i = measurements;
+        
+        ArrayList<Double> speed_x = new ArrayList<>(), speed_y = new ArrayList<>(), speed_z = new ArrayList<>();
+        
+        speed_x.add(0.0d);
+        
+        while(i > 0) {
+            if(i != measurements) speed_x.add(speed_x.get(measurements - 1 - i));
+            
+            speed_x.add(measurements - i, speed_x.get(measurements - i) + (acc_x.get(i) + acc_x.get(i - 1)) / 2 * 0.001);
+            i--;
+        }
+        
+        
+        i = measurements;
+        
+        speed_y.add(0.0d);
+        
+        while(i > 0) {
+            if(i != measurements) speed_y.add(speed_y.get(measurements - 1 - i));
+            
+            speed_y.add(measurements - i, speed_y.get(measurements - i) + (acc_y.get(i) + acc_y.get(i - 1)) / 2 * 0.001);
+            i--;
+        }
+        
+        
+        i = measurements;
+        
+        speed_z.add(0.0d);
+        
+        while(i > 0) {
+            if(i != measurements) speed_z.add(speed_z.get(measurements - 1 - i));
+            
+            speed_z.add(measurements - i, speed_z.get(measurements - i) + (acc_z.get(i) + acc_z.get(i - 1)) / 2 * 0.001);
+            i--;
+        }
+        
+        
+        
+        ArrayList<Double> path_x = new ArrayList<>(), path_y = new ArrayList<>(), path_z = new ArrayList<>();
+        
+        i = 0;
+        
+        path_x.add(0.0d);
+        
+        while(i < measurements) {
+            if(i != 0) path_x.add(path_x.get(i - 1));
+            
+            path_x.add(i, path_x.get(i) + (speed_x.get(i) + speed_x.get(i + 1) ) / 2 * 0.001);
+            i++;
+        }
+        
+        
+        i = 0;
+        
+        path_y.add(0.0d);
+        
+        while(i < measurements) {
+            if(i != 0) path_y.add(path_y.get(i - 1));
+            
+            path_y.add(i, path_y.get(i) + (speed_y.get(i) + speed_y.get(i + 1) ) / 2 * 0.001);
+            i++;
+        }
+        
+        
+        i = 0;
+        
+        path_z.add(0.0d);
+        
+        while(i < measurements) {
+            if(i != 0) path_z.add(path_z.get(i - 1));
+            
+            path_z.add(i, path_z.get(i) + (speed_z.get(i) + speed_z.get(i + 1) ) / 2 * 0.001);
+            i++;
+        }
+        
+        return Math.sqrt( (path_x.get(0) * path_x.get(0)) + (path_y.get(0) * path_y.get(0)) + (path_z.get(0) * path_z.get(0)) );
     }
     
     public class RoutePainter implements Painter<JXMapViewer>
