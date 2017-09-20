@@ -7,6 +7,8 @@ package com.kirs.telemetry.cstp;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -16,16 +18,25 @@ public class FileReceiver {
     
     public FileReceiver(String filename, Parser parser) {
         try {
+            Thread.sleep(2000);
+            
             FileInputStream file = new FileInputStream(filename);
             
-            byte[] bytes = new byte[500];
+            byte[] bytes = new byte[100];
             
             while(file.read(bytes) != -1) {
-                    parser.addBytes(bytes);
+                /*try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                }*/
+                parser.addBytes(bytes);
             }
             
         } catch (IOException ex) {
             System.err.println(ex);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(FileReceiver.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

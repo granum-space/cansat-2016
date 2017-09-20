@@ -8,6 +8,8 @@ package com.kirs.telemetry.cstp;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -17,15 +19,17 @@ import org.json.JSONObject;
  */
 public class GranumParser extends Parser{
     
-    private final int fastPacketLength = 44;
+    private final int fastPacketLength = 45;
     private final int slowPacketLength = 62;
     private final int soslowPacketLength = 40;
-    private final int accPacketLength = 11;
+    private final int accPacketLength = 311;
+    private final int stmPacketLength = 32;
     
     private final int fastPacketSign = 0xCAAC;
     private final int slowPacketSign = 0xFCFC;
     private final int soslowPacketSign = 0x1AFC;
     private final int accPacketSign = 0x7BFA;
+    private final int stmPacketSign = 0xF7AB;
 
     
     Server server;
@@ -35,7 +39,8 @@ public class GranumParser extends Parser{
         STATE_ACCUM_FAST, // Состояния накопления пакетов
         STATE_ACCUM_SLOW,
         STATE_ACCUM_SOSLOW,
-        STATE_ACCUM_ACC
+        STATE_ACCUM_ACC,
+        STATE_ACCUM_STM
     };
     
     byte[] bytes = new byte[500];
@@ -51,6 +56,8 @@ public class GranumParser extends Parser{
             case (byte) 0x1A:
             case (byte) 0x7B:
             case (byte) 0xFA:
+            case (byte) 0xF7:
+            case (byte) 0xAB:
                 return true;
             default: 
                 return false;
@@ -86,6 +93,10 @@ public class GranumParser extends Parser{
 
                         case accPacketSign:
                             _state = State.STATE_ACCUM_ACC;
+                            break;
+                            
+                        case stmPacketSign:
+                            _state = State.STATE_ACCUM_STM;
                             break;
 
                         default:
@@ -141,8 +152,22 @@ public class GranumParser extends Parser{
                 if(index == accPacketLength) {
                     System.out.println("Full acc packet");
                     
-                    if(checkPacket(accPacketLength))
+                    if(checkPacket(accPacketLength)) {
                         server.informClients(decodeAccPacket());
+                    }
+                        
+                    index = 0;
+                    _state = State.STATE_IN_SEARCH;
+                }
+                
+                break;
+                
+            case STATE_ACCUM_STM:
+                if(index == stmPacketLength) {
+                    System.out.println("Full stm packet");
+                    
+                    if(checkPacket(stmPacketLength))
+                        server.informClients(decodeStmPacket());
                         
                     index = 0;
                     _state = State.STATE_IN_SEARCH;
@@ -164,6 +189,9 @@ public class GranumParser extends Parser{
         
         json.put("NUMBER", getUShort(buffer));
         json.put("TICK", getUInt(buffer));
+        
+        json.put("MODE", buffer.get());
+        System.out.println("Mode " + json.getLong("MODE"));
         
         json.put("ACC_X", buffer.getShort() * 0.004);
         json.put("ACC_Y", buffer.getShort() * 0.004);
@@ -277,18 +305,43 @@ public class GranumParser extends Parser{
         
         json.put("TRY", buffer.get());
         
-        json.put("START_I", getUShort(buffer));
-        json.put("END_I", getUShort(buffer));
+        int offset = getUShort(buffer);
+        int size = getUShort(buffer);
+        
+        json.put("SIZE", size);
         
         JSONArray accelerations = new JSONArray();
-        for(int i = 0; i < 50; i++) {
+        for(int i = 0; i < size; i++) {
             JSONObject acc = new JSONObject();
+            acc.put("OFFSET", offset + i);
             acc.put("X", buffer.getShort());
             acc.put("Y", buffer.getShort());
             acc.put("Z", buffer.getShort());
             accelerations.put(acc);
         }
         json.put("ACCELERATIONS", accelerations);
+        
+        return json;
+    }
+    
+    private JSONObject decodeStmPacket() {
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        
+        JSONObject json = new JSONObject();
+        
+        buffer.getShort();
+        
+        json.put("TYPE", "STM");
+        
+        json.put("ACC_X", buffer.getShort());
+        json.put("ACC_Y", buffer.getShort());
+        json.put("ACC_Z", buffer.getShort());
+        
+        json.put("ACC_MAX", Math.sqrt( getUInt(buffer) ) * 0.050);
+        
+        json.put("ACCBUF_STATUS", buffer.get());
+        json.put("ACCBUF_OFFSET", getUShort(buffer));
         
         return json;
     }
