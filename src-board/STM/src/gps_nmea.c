@@ -107,6 +107,7 @@ void gps_task(void * args)
 
 	for ( ; ; )
 	{
+	breakout:
 		// ждем доллара
 		do {
 			_msg_buffer[0] = _read_dma_buffer();
@@ -121,7 +122,7 @@ void gps_task(void * args)
 			if (_msg_carret >= GPS_MSG_BUFFER_SIZE)
 			{
 				// что-то не так
-				continue;
+				goto breakout; // начинаем заново
 			}
 
 		} while('\r' != _msg_buffer[_msg_carret-2]
